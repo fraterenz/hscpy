@@ -1,0 +1,3 @@
+matplotlib
+futils @ git+https://github.com/fraterenz/futils@v0.0.1
+numpy>=1.25
