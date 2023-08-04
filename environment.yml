@@ -1,0 +1,14 @@
+name: hscpy
+dependencies:
+  - matplotlib
+  - python=3.9
+  - numpy>=1.25
+  - pandas>=1.5
+  - pip
+  - jupyter
+  - black[jupyter]
+  - ipykernel
+  - pip:
+    - git+https://github.com/fraterenz/futils@v0.0.1
+    - git+https://github.com/fraterenz/hscpy
+
