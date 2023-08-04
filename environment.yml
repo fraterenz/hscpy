@@ -8,6 +8,8 @@ dependencies:
   - jupyter
   - black[jupyter]
   - ipykernel
+  - seaborn
+  - scipy
   - pip:
     - git+https://github.com/fraterenz/futils@v0.0.1
     - git+https://github.com/fraterenz/hscpy
