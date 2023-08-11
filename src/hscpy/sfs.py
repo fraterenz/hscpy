@@ -6,7 +6,7 @@ from pathlib import Path
 from futils import snapshot
 
 
-def load_sfs(path2dir: Path, neutral: bool, runs: int, timepoint: int = 1):
+def load_sfs(path2dir: Path, runs: int, timepoint: int = 1):
     """load all sfs for a specific timepoint, by default load the sfs of the
     last timepoint.
 
@@ -14,12 +14,9 @@ def load_sfs(path2dir: Path, neutral: bool, runs: int, timepoint: int = 1):
     timepoint is 1.
     """
     sfs = dict()
-    path2sfs = path2dir / "sfs_neutral" if neutral else path2dir / "sfs"
+    path2sfs = path2dir / "sfs"
     all_dirs = [x for x in path2sfs.iterdir() if x.is_dir()]
-    # assert (
-    #     len(all_dirs) == NB_TIMEPOINTS
-    # ), f"Wrong nb of timepoints saved: should be {NB_TIMEPOINTS} found {len(all_dirs)}"
-    # last_timepoint = min([int(x.stem) for x in all_dirs])
+    # rust saves the last timepoint as 1
     last_timepoint_path = [x for x in all_dirs if int(x.stem) == timepoint][0]
     i = 0
     for i, file in enumerate(last_timepoint_path.iterdir(), 1):
@@ -39,8 +36,8 @@ def load_sfs(path2dir: Path, neutral: bool, runs: int, timepoint: int = 1):
 
 def plot_sfs(sfs_: Dict[int, int], ax, k: str):
     ax.plot(
-        list(sfs_.keys()),
         list(sfs_.values()),
+        list(sfs_.keys()),
         alpha=0.45,
         marker="v",
         linestyle="",
@@ -51,7 +48,7 @@ def plot_sfs(sfs_: Dict[int, int], ax, k: str):
 
 def average_sfs(sfs_: Dict[int, Dict[int, int]]):
     # add zeros for values which are not present in all SFS
-    sfs_uniformised = snapshot.Uniformise.uniformise_histograms([snapshot.Histogram(sfs) for sfs in sfs_.values()])
+    sfs_uniformised = snapshot.Uniformise.uniformise_histograms([snapshot.Histogram(sfs) for sfs in sfs_.keys()])
     jcells = sfs_uniformised.create_x_array()
     # take the Nj mutations for all simulations
     avg_sfs = sfs_uniformised.y
