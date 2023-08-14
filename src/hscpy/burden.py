@@ -1,0 +1,67 @@
+from typing import Dict, NewType, Tuple
+import numpy as np
+import json
+import sys
+from pathlib import Path
+from futils import snapshot
+
+MutationalBurden = NewType("MutationalBurden", Dict[int, int])
+
+
+def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> MutationalBurden:
+    """load all burden for a specific timepoint, by default load the burden of the
+    last timepoint.
+
+    Remember that rust saves timepoints in decreasing order, hence the last
+    timepoint is 1.
+    """
+    burden = dict()
+    path2burden = path2dir / "burden"
+    all_dirs = [x for x in path2burden.iterdir() if x.is_dir()]
+    # rust saves the last timepoint as 1
+    last_timepoint_path = [x for x in all_dirs if int(x.stem) == timepoint][0]
+    i = 0
+    for i, file in enumerate(last_timepoint_path.iterdir(), 1):
+        try:
+            with open(file, "r") as f:
+                burden[file.stem] = {int(x): int(y) for x, y in json.load(f).items()}
+        except json.JSONDecodeError as e:
+            print(f"Error in opening {file} {e}")
+            sys.exit(1)
+
+    assert i == runs, f"wrong number of runs found: should be {runs} found {i}"
+    assert (
+        len(burden) == runs
+    ), f"wrong number of runs loaded: should be {runs} found {len(burden)}"
+    return MutationalBurden(burden)
+
+
+def plot_burden(burden: MutationalBurden, ax, **kwargs):
+    ax.bar(list(burden.keys()), list(burden.values()), **kwargs)
+    return ax
+
+
+def average_burden(burden_dict: Dict[int, MutationalBurden]):
+    # TODO
+    # raise NotImplementedError(
+    #    "I think we should pool all the simulations together and then average them, not average them directly"
+    # )
+    # add zeros for values which are not present in all SFS
+    burden_uniformised = snapshot.Uniformise.uniformise_histograms(
+        [snapshot.Histogram(burden) for burden in burden_dict.values()]
+    )
+    jcells = burden_uniformised.create_x_array()
+    # take the Nj mutations for all simulations
+    avg_burden = burden_uniformised.y
+    # compute the average, not pooling
+    return jcells, np.mean(avg_burden, axis=0)
+
+
+def single_cell_mutations_from_burden(burden: MutationalBurden) -> np.ndarray:
+    """From the SFS, create an array where each entry is the number of
+    mutations found in a cell"""
+    muts = []
+    for jmuts, jcells in burden.items():
+        for cell in range(0, jcells):
+            muts.append(jmuts)
+    return np.array(muts, dtype=int)
