@@ -1,4 +1,5 @@
 from typing import Dict, NewType, Tuple
+from hscpy import Measurement, dir_path_over_timepoint
 import numpy as np
 import json
 import sys
@@ -8,7 +9,7 @@ from futils import snapshot
 MutationalBurden = NewType("MutationalBurden", Dict[int, int])
 
 
-def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> MutationalBurden:
+def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, MutationalBurden]:
     """load all burden for a specific timepoint, by default load the burden of the
     last timepoint.
 
@@ -16,15 +17,16 @@ def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> MutationalBurd
     timepoint is 1.
     """
     burden = dict()
-    path2burden = path2dir / "burden"
-    all_dirs = [x for x in path2burden.iterdir() if x.is_dir()]
-    # rust saves the last timepoint as 1
-    last_timepoint_path = [x for x in all_dirs if int(x.stem) == timepoint][0]
+    try:
+        timepoint_path = dir_path_over_timepoint(measurement=Measurement.BURDEN, path2dir=path2dir, timepoint=timepoint)
+    except AssertionError as e:
+        e.add_note(f"cannot load burden from {path2dir} for timepoint {timepoint}: {e}")
+        raise e
     i = 0
-    for i, file in enumerate(last_timepoint_path.iterdir(), 1):
+    for i, file in enumerate(timepoint_path.iterdir(), 1):
         try:
             with open(file, "r") as f:
-                burden[file.stem] = {int(x): int(y) for x, y in json.load(f).items()}
+                burden[file.stem] = MutationalBurden({int(x): int(y) for x, y in json.load(f).items()})
         except json.JSONDecodeError as e:
             print(f"Error in opening {file} {e}")
             sys.exit(1)
@@ -33,7 +35,7 @@ def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> MutationalBurd
     assert (
         len(burden) == runs
     ), f"wrong number of runs loaded: should be {runs} found {len(burden)}"
-    return MutationalBurden(burden)
+    return burden
 
 
 def plot_burden(burden: MutationalBurden, ax, **kwargs):

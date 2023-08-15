@@ -1,7 +1,12 @@
+from pathlib import Path
 import sys
 from typing import Tuple
 import numpy as np
+from enum import StrEnum, auto
 
+class Measurement(StrEnum):
+    SFS = auto()
+    BURDEN = auto()
 
 def get_idx_timepoint_from_age(
     age: int, years: int, nb_timepoints: int
@@ -29,3 +34,15 @@ def get_idx_timepoint_from_age(
             f"age {age} cannot be mapped, found mapping of timepoint {found} for the closest age of {closest_age}"
         )
     return found, closest_age
+
+
+def dir_path_over_timepoint(measurement: Measurement, path2dir: Path, timepoint: int) -> Path:
+    """Return a Path to the directory storing the `measurement` for a specific
+    `timepoint`
+    """
+    path2burden = path2dir / str(measurement)
+    all_dirs = [x for x in path2burden.iterdir() if x.is_dir()]
+    # rust saves the last timepoint as 1
+    paths = [x for x in all_dirs if int(x.stem) == timepoint]
+    assert len(paths) > 0, "found empty dir"
+    return paths[0]
