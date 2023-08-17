@@ -13,11 +13,11 @@ Sfs = NewType("Sfs", List[int])
 def load_sfs_entropy(
     path2dir: Path, runs: int, cells: int, timepoint: int = 1
 ) -> Dict[str, Sfs]:
-    return load(path2dir, runs, Measurement.SFS_ENTROPY, timepoint)
+    return load(path2dir, runs, Measurement.SFS_ENTROPY, cells, timepoint)
 
 
 def load(
-    path2dir: Path, runs: int, measurement: Measurement, cells: int, timepoint: int = 1
+    path2dir: Path, runs: int, measurement: Measurement, cells: int, timepoint: int
 ) -> Dict[str, Sfs]:
     sfs = dict()
     try:
