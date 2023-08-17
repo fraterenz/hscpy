@@ -9,6 +9,7 @@ class Measurement(StrEnum):
     SFS = auto()
     BURDEN = auto()
     SFS_ENTROPY = auto()
+    VARIANT_FRACTION = auto()
 
 
 def get_idx_timepoint_from_age(
