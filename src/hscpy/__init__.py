@@ -4,9 +4,12 @@ from typing import Tuple
 import numpy as np
 from enum import StrEnum, auto
 
+
 class Measurement(StrEnum):
     SFS = auto()
     BURDEN = auto()
+    SFS_ENTROPY = auto()
+
 
 def get_idx_timepoint_from_age(
     age: int, years: int, nb_timepoints: int
@@ -36,7 +39,9 @@ def get_idx_timepoint_from_age(
     return found, closest_age
 
 
-def dir_path_over_timepoint(measurement: Measurement, path2dir: Path, timepoint: int) -> Path:
+def dir_path_over_timepoint(
+    measurement: Measurement, path2dir: Path, timepoint: int
+) -> Path:
     """Return a Path to the directory storing the `measurement` for a specific
     `timepoint`
     """
