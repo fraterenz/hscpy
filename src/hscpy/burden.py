@@ -9,7 +9,9 @@ from futils import snapshot
 MutationalBurden = NewType("MutationalBurden", Dict[int, int])
 
 
-def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, MutationalBurden]:
+def load_burden(
+    path2dir: Path, runs: int, cells: int, timepoint: int = 1
+) -> Dict[str, MutationalBurden]:
     """load all burden for a specific timepoint, by default load the burden of the
     last timepoint.
 
@@ -18,7 +20,12 @@ def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, Muta
     """
     burden = dict()
     try:
-        timepoint_path = dir_path_over_timepoint(measurement=Measurement.BURDEN, path2dir=path2dir, timepoint=timepoint)
+        timepoint_path = dir_path_over_timepoint(
+            measurement=Measurement.BURDEN,
+            cells=cells,
+            path2dir=path2dir,
+            timepoint=timepoint,
+        )
     except AssertionError as e:
         e.add_note(f"cannot load burden from {path2dir} for timepoint {timepoint}: {e}")
         raise e
@@ -26,7 +33,9 @@ def load_burden(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, Muta
     for i, file in enumerate(timepoint_path.iterdir(), 1):
         try:
             with open(file, "r") as f:
-                burden[file.stem] = MutationalBurden({int(x): int(y) for x, y in json.load(f).items()})
+                burden[file.stem] = MutationalBurden(
+                    {int(x): int(y) for x, y in json.load(f).items()}
+                )
         except json.JSONDecodeError as e:
             print(f"Error in opening {file} {e}")
             sys.exit(1)

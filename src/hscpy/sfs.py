@@ -10,17 +10,19 @@ from pathlib import Path
 Sfs = NewType("Sfs", List[int])
 
 
-def load_sfs_entropy(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, Sfs]:
+def load_sfs_entropy(
+    path2dir: Path, runs: int, cells: int, timepoint: int = 1
+) -> Dict[str, Sfs]:
     return load(path2dir, runs, Measurement.SFS_ENTROPY, timepoint)
 
 
 def load(
-    path2dir: Path, runs: int, measurement: Measurement, timepoint: int = 1
+    path2dir: Path, runs: int, measurement: Measurement, cells: int, timepoint: int = 1
 ) -> Dict[str, Sfs]:
     sfs = dict()
     try:
         timepoint_path = dir_path_over_timepoint(
-            measurement=measurement, path2dir=path2dir, timepoint=timepoint
+            measurement=measurement, path2dir=path2dir, cells=cells, timepoint=timepoint
         )
     except AssertionError as e:
         e.add_note(f"cannot load SFS from {path2dir} for timepoint {timepoint}: {e}")
@@ -43,14 +45,16 @@ def load(
     return sfs
 
 
-def load_sfs(path2dir: Path, runs: int, timepoint: int = 1) -> Dict[str, Sfs]:
+def load_sfs(
+    path2dir: Path, runs: int, cells: int, timepoint: int = 1
+) -> Dict[str, Sfs]:
     """load all sfs for a specific timepoint, by default load the burden of the
     last timepoint.
 
     Remember that rust saves timepoints in decreasing order, hence the last
     timepoint is 1.
     """
-    return load(path2dir, runs, Measurement.SFS, timepoint)
+    return load(path2dir, runs, Measurement.SFS, cells, timepoint)
 
 
 def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.Series:

@@ -40,12 +40,12 @@ def get_idx_timepoint_from_age(
 
 
 def dir_path_over_timepoint(
-    measurement: Measurement, path2dir: Path, timepoint: int
+        measurement: Measurement, path2dir: Path, cells: int, timepoint: int
 ) -> Path:
     """Return a Path to the directory storing the `measurement` for a specific
     `timepoint`
     """
-    path2burden = path2dir / str(measurement)
+    path2burden = path2dir / str(cells) / str(measurement)
     all_dirs = [x for x in path2burden.iterdir() if x.is_dir()]
     # rust saves the last timepoint as 1
     paths = [x for x in all_dirs if int(x.stem) == timepoint]
