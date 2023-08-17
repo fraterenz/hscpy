@@ -1,34 +1,23 @@
 import numpy as np
 from pathlib import Path
 
-from hscpy import Measurement, dir_path_over_timepoint
-
 
 def load_variant_fractions(
-    path2dir: Path,
-    nb_timepoints: int,
-    cells: int,
-    timepoint: int,
-    runs: int,
-    subclones: int,
+    path2dir: Path, nb_timepoints: int, cells: int, runs: int, subclones: int
 ):
-    try:
-        timepoint_path = dir_path_over_timepoint(
-            measurement=Measurement.VARIANT_FRACTION,
-            path2dir=path2dir,
-            cells=cells,
-            timepoint=timepoint,
-        )
-    except AssertionError as e:
-        e.add_note(
-            f"cannot load variant fraction from {path2dir} for timepoint {timepoint}: {e}"
-        )
-        raise e
-    data = []
+    assert path2dir.is_dir(), "must be dir"
+    path2variants = path2dir / f"{cells}cells" / "variant_fraction"
+    assert (
+        len([x for x in path2variants.iterdir() if x.is_dir()]) == nb_timepoints
+    ), "Wrong number of timepoints saved"
 
-    i = 0
-    for i, file in enumerate(timepoint_path.iterdir(), 1):
-        with open(file, "r") as csvfile:
+    data = []
+    for path2snapshot in sorted(
+        list(path2variants.iterdir()),
+        key=lambda path2name: int(path2name.name),
+        reverse=True,
+    ):  # need to reverse because rust saves from the last timepoint
+        for file in path2snapshot.iterdir():
             with open(file, "r") as f:
                 # remove wild type clone
 
@@ -39,11 +28,6 @@ def load_variant_fractions(
                         if ele and i > 0
                     ]
                 )
-
-    assert i == runs, f"wrong number of runs found: should be {runs} found {i}"
-    assert (
-        len(data) == runs
-    ), f"wrong number of runs loaded: should be {runs} found {len(data)}"
 
     return np.array(data, dtype=float).reshape(
         nb_timepoints, runs, subclones - 1
