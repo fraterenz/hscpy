@@ -16,7 +16,7 @@ def show_sfs_last_timepoint_plots(
     sfs_all = sfs.load_sfs(
         sim_options.path2save,
         runs=sim_options.runs,
-        cells=sim_options.cells,
+        cells=sim_options.sample,
         timepoint=1,
     )  # 1 is the last timepoint
 
