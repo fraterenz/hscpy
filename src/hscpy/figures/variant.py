@@ -24,7 +24,7 @@ def show_variant_plots(
     variant_fraction = variant.load_variant_fractions(
         sim_options.path2save,
         nb_timepoints=sim_options.nb_timepoints,
-        cells=sim_options.cells,
+        cells=sim_options.sample,
         runs=sim_options.runs,
         subclones=sim_options.nb_subclones,
     )

@@ -28,6 +28,7 @@ def show_sfs_last_timepoint_plots(
     ax.set_yscale("log")
     ax.set_xlabel("j cells")
     ax.set_ylabel("# of muts in j cells")
+    ax.set_title(f"SFS of {id2plot} run at age {sim_options.last_timepoint_years} with {sim_options.sample} cells")
     fig.show()
 
     sfs_all = sfs.pandafy_sfs_dict(sfs_all)
@@ -49,6 +50,7 @@ def show_sfs_last_timepoint_plots(
     ax.set_yscale("log")
     ax.set_xlabel("j cells")
     ax.set_ylabel("# of muts in j cells")
+    ax.set_title(f"SFS of {sim_options.runs} runs at age {sim_options.last_timepoint_years} with {sim_options.sample} cells")
     if plot_options.save:
         plt.savefig(sim_options.path2save / f"sfs{plot_options.extension}")
     fig.show()

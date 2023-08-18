@@ -14,6 +14,7 @@ class PlotOptions:
 class SimulationOptions:
     runs: int
     cells: int
+    sample: int
     path2save: Path
     neutral_rate: float
     nb_timepoints: int
