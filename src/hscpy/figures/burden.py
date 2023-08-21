@@ -24,7 +24,7 @@ def show_burden_plots(
             for idx_sim, simulation in load_burden(
                 sim_options.path2save,
                 runs=sim_options.runs,
-                cells=sim_options.cells,
+                cells=sim_options.sample,
                 timepoint=idx_timepoint,
             ).items():
                 simulated[closest_age[age]][idx_sim] = simulation
