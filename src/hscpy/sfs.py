@@ -1,10 +1,11 @@
 import sys
 import csv
-from typing import Dict, List, NewType
-from hscpy import Measurement, dir_path_over_timepoint
 import numpy as np
 import pandas as pd
+from typing import Dict, List, NewType, Tuple
+from scipy import stats
 from pathlib import Path
+from hscpy import Measurement, dir_path_over_timepoint
 
 # Sfs with cell counts, not frequencies
 Sfs = NewType("Sfs", List[int])
@@ -71,3 +72,62 @@ def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.Series:
         sfs_df["id"] = run_id
         sfs_all.append(sfs_df)
     return pd.concat(sfs_all)
+
+
+from enum import StrEnum, auto
+
+
+class Correction(StrEnum):
+    ONE_OVER_F = auto()
+
+    ONE_OVER_F_SQUARED = auto()
+
+
+class SamplingCorrection:
+    def __init__(self, pop_size: int, sample_size: int):
+        self.pop_size = pop_size
+        self.sample_size = sample_size
+        self.correction = compute_sampling_correction(n=pop_size, s=sample_size)
+        self.frequencies = compute_frequencies(pop_size)
+
+
+def compute_frequencies(pop_size: int) -> np.ndarray:
+    return np.arange(1, pop_size + 1, step=1, dtype=int)
+
+
+def compute_sampling_correction(n: int, s: int) -> np.ndarray:
+    return np.array(
+        [
+            stats.binom(s, (v + 1) / n).pmf(np.arange(1, s + 1, step=1))
+            for v in range(0, n)
+        ],
+        dtype=float,
+    ).T
+
+
+def compute_variants(
+    s_correction: SamplingCorrection, correction: Correction, sample_size: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    _f = range(0,1,length=N+1)
+    nThGr_f = (1 ./ _f).^2
+    nSample_f = Vector{Float64}(undef, S+1)
+    for u in 1:S
+        nSample_f[1+u] =
+            sum(
+                [ nTrue_f[1+v] * pdf(Binomial(S, v/N), u) for v=1:N ]
+            )
+    end
+    """
+    if correction == Correction.ONE_OVER_F:
+        variants2correct = 1 / s_correction.frequencies
+    elif correction == Correction.ONE_OVER_F_SQUARED:
+        variants2correct = 1 / s_correction.frequencies**2
+    else:
+        raise ValueError
+
+    assert (
+        variants2correct.shape[0] == s_correction.pop_size
+    ), f"{variants2correct.shape[0]}"
+    corrected = s_correction.correction[:sample_size, :] @ variants2correct
+    return corrected, variants2correct
