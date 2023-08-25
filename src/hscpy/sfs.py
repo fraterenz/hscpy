@@ -35,7 +35,12 @@ def load(
             sfs[file.stem] = list()
             try:
                 for row in sfsreader:
-                    sfs[file.stem].extend([int(ele) for ele in row if ele])
+                    for ele in row:
+                        try:
+                            intele = int(ele)
+                        except ValueError:
+                            continue
+                        sfs[file.stem].append(intele)
             except csv.Error as e:
                 sys.exit("file {}, line {}: {}".format(file, sfsreader.line_num, e))
 
