@@ -26,13 +26,13 @@ def get_idx_timepoint_from_age(
         print(f"arg `age` must be int found {type(age)} instead")
         sys.exit(1)
 
-    timepoints = list(np.linspace(0, years, nb_timepoints))[::-1]
+    timepoints = list(np.linspace(1, years + 1, nb_timepoints))[::-1]
 
     try:
         found = timepoints.index(age) + 1
         closest_age = age
     except ValueError:
-        closest_age = round(min(timepoints, key=lambda x: abs(x - age)))
+        closest_age = min(timepoints, key=lambda x: abs(x - age))
         found = timepoints.index(closest_age) + 1
         print(
             f"age {age} cannot be mapped, found mapping of timepoint {found} for the closest age of {closest_age}"
