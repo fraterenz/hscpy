@@ -1,3 +1,4 @@
+from functools import reduce
 from typing import Dict, NewType, Tuple
 from hscpy import Measurement, dir_path_over_timepoint
 import numpy as np
@@ -6,6 +7,7 @@ import sys
 from pathlib import Path
 from futils import snapshot
 
+# keys: number of mutations, values: number of cells
 MutationalBurden = NewType("MutationalBurden", Dict[int, int])
 
 
@@ -47,8 +49,32 @@ def load_burden(
     return burden
 
 
+def compute_mean_variance(burden: MutationalBurden) -> Tuple[float, float]:
+    cells = sum(burden.values())
+    mean = sum(map(lambda entry: entry[0] * entry[1] / cells, burden.items()))
+    variance = sum(
+        map(lambda entry: (entry[0] - mean) ** 2 * entry[1] / cells, burden.items())
+    )
+    return mean, variance
+
+
 def plot_burden(burden: MutationalBurden, ax, **kwargs):
-    ax.bar(list(burden.keys()), list(burden.values()), **kwargs)
+    ax.bar(
+        list(burden.keys()),
+        list(burden.values()),
+        color=kwargs["color"],
+        alpha=kwargs["alpha"],
+    )
+    ymax = max(burden.values())
+    mean, var = compute_mean_variance(burden)
+    ax.axvline(
+        x=mean,
+        ymin=0,
+        ymax=ymax,
+        linestyle="--",
+        c=kwargs["color"],
+        label=f"{kwargs['label']} years, m={mean:.2f}, var={var:.2f}",
+    )
     return ax
 
 

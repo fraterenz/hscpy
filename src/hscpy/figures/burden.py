@@ -38,12 +38,17 @@ def show_burden_plots(
 
     id2plot = "3"
     fig, ax = plt.subplots(1, 1, figsize=plot_options.figsize)
+    ymax = 0
     for (age, sfs_dict), c in zip(
         simulated.items(),
         ("red", "grey", "black", "cyan", "yellowgreen", "blue", "pink"),
     ):
         plot_burden(sfs_dict[id2plot], ax, label=age, color=c, alpha=0.8)
+        cells = max(sfs_dict[id2plot].values())
+        if cells > ymax:
+            ymax = cells
     ax.legend(title="age")
+    ax.set_ylim((0, ymax))
     ax.set_xlabel("single nucleotide variant")
     ax.set_ylabel("cell count")
     ax.set_title("single cell mutational burden")
