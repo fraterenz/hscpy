@@ -64,6 +64,7 @@ def plot_burden(burden: MutationalBurden, ax, **kwargs):
         list(burden.values()),
         color=kwargs["color"],
         alpha=kwargs["alpha"],
+        width=1,
     )
     ymax = max(burden.values())
     mean, var = compute_mean_variance(burden)
