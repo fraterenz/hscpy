@@ -7,13 +7,10 @@ import sys
 from pathlib import Path
 from futils import snapshot
 
-# keys: number of mutations, values: number of cells
-MutationalBurden = NewType("MutationalBurden", Dict[int, int])
-
 
 def load_burden(
     path2dir: Path, runs: int, cells: int, timepoint: int = 1
-) -> Dict[str, MutationalBurden]:
+) -> Dict[str, snapshot.Histogram]:
     """load all burden for a specific timepoint, by default load the burden of the
     last timepoint.
 
@@ -35,7 +32,7 @@ def load_burden(
     for i, file in enumerate(timepoint_path.iterdir(), 1):
         try:
             with open(file, "r") as f:
-                burden[file.stem] = MutationalBurden(
+                burden[file.stem] = snapshot.Histogram(
                     {int(x): int(y) for x, y in json.load(f).items()}
                 )
         except json.JSONDecodeError as e:
@@ -49,7 +46,7 @@ def load_burden(
     return burden
 
 
-def compute_mean_variance(burden: MutationalBurden) -> Tuple[float, float]:
+def compute_mean_variance(burden: snapshot.Histogram) -> Tuple[float, float]:
     cells = sum(burden.values())
     mean = sum(map(lambda entry: entry[0] * entry[1] / cells, burden.items()))
     variance = sum(
@@ -58,7 +55,7 @@ def compute_mean_variance(burden: MutationalBurden) -> Tuple[float, float]:
     return mean, variance
 
 
-def plot_burden(burden: MutationalBurden, ax, **kwargs):
+def plot_burden(burden: snapshot.Histogram, ax, **kwargs):
     ax.bar(
         list(burden.keys()),
         list(burden.values()),
@@ -79,7 +76,7 @@ def plot_burden(burden: MutationalBurden, ax, **kwargs):
     return ax
 
 
-def average_burden(burden_dict: Dict[int, MutationalBurden]):
+def average_burden(burden_dict: Dict[int, snapshot.Histogram]):
     # TODO
     # raise NotImplementedError(
     #    "I think we should pool all the simulations together and then average them, not average them directly"
@@ -95,7 +92,7 @@ def average_burden(burden_dict: Dict[int, MutationalBurden]):
     return jcells, np.mean(avg_burden, axis=0)
 
 
-def single_cell_mutations_from_burden(burden: MutationalBurden) -> np.ndarray:
+def single_cell_mutations_from_burden(burden: snapshot.Histogram) -> np.ndarray:
     """From the SFS, create an array where each entry is the number of
     mutations found in a cell"""
     muts = []

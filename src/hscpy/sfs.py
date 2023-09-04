@@ -2,10 +2,12 @@ import sys
 import csv
 import numpy as np
 import pandas as pd
+from enum import StrEnum, auto
 from typing import Dict, List, NewType, Tuple
 from scipy import stats
 from pathlib import Path
 from hscpy import Measurement, dir_path_over_timepoint
+from futils import snapshot
 
 # Sfs with cell counts, not frequencies
 Sfs = NewType("Sfs", List[int])
@@ -51,6 +53,14 @@ def load(
     return sfs
 
 
+def pooled_sfs(sfs_: Dict[str, Sfs]) -> snapshot.Distribution:
+    histograms = [
+        snapshot.Histogram(pd.Series(sfs, dtype=int).value_counts().to_dict())
+        for sfs in sfs_
+    ]
+    return snapshot.Uniformise.pooled_distribution(histograms)
+
+
 def load_sfs(
     path2dir: Path, runs: int, cells: int, timepoint: int = 1
 ) -> Dict[str, Sfs]:
@@ -63,7 +73,7 @@ def load_sfs(
     return load(path2dir, runs, Measurement.SFS, cells, timepoint)
 
 
-def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.Series:
+def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.DataFrame:
     """Transform a dict of sfs (key: run id, values: sfs) into a long-record
     format pandas Series"""
     sfs_all = list()
@@ -79,12 +89,8 @@ def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.Series:
     return pd.concat(sfs_all)
 
 
-from enum import StrEnum, auto
-
-
 class Correction(StrEnum):
     ONE_OVER_F = auto()
-
     ONE_OVER_F_SQUARED = auto()
 
 
