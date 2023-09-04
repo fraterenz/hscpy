@@ -1,4 +1,4 @@
 matplotlib
 seaborn
-futils @ git+https://github.com/fraterenz/futils@v0.0.1
+futils @ git+https://github.com/fraterenz/futils@v0.0.2
 numpy>=1.21
