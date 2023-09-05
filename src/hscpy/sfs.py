@@ -56,7 +56,7 @@ def load(
 def pooled_sfs(sfs_: Dict[str, Sfs]) -> snapshot.Distribution:
     histograms = [
         snapshot.Histogram(pd.Series(sfs, dtype=int).value_counts().to_dict())
-        for sfs in sfs_
+        for sfs in sfs_.values()
     ]
     return snapshot.Uniformise.pooled_distribution(histograms)
 
