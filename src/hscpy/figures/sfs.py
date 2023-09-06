@@ -1,4 +1,7 @@
-from typing import Set
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Set
+from futils.snapshot import Distribution
 from scipy import stats
 import seaborn as sns
 import numpy as np
@@ -7,6 +10,15 @@ import pandas as pd
 from hscpy.figures.options import PlotOptions, SimulationOptions
 from hscpy.figures import mitchell
 from hscpy import get_idx_timepoint_from_age, sfs
+
+
+@dataclass
+class Donor:
+    age: int
+    closest_age: int
+    cells: int
+    name: str
+    id_timepoint: int
 
 
 def show_sfs_last_timepoint_plots(
@@ -66,6 +78,7 @@ def show_entropy_plots(
     plot_options: PlotOptions,
     ages: Set[int],
     early_variants_only: bool = True,
+    verbosity: bool = False,
 ):
     closest_age = dict.fromkeys(ages)
     simulated = dict()
@@ -77,6 +90,7 @@ def show_entropy_plots(
             age,
             sim_options.last_timepoint_years,
             nb_timepoints=sim_options.nb_timepoints,
+            verbosity=verbosity,
         )
         closest_age[age] = closest_age_
         simulated[closest_age[age]] = dict()
@@ -129,8 +143,6 @@ def show_entropy_plots(
     fig.show()
 
 
-# TODO
-"""
 def get_ymin(min1: float, min2: float) -> float:
     my_min = min1 if min1 < min2 else min2
     return my_min - my_min * 0.2
@@ -141,68 +153,74 @@ def get_xmax(max1: int, max2: int) -> float:
     return my_max + my_max * 0.2
 
 
-def plot_sfs_simulations_data(summary, simulated, cells_sampled: int, id2plot: str = "0"):
-    # summary: Summary_cut.csv
-    # pop size
-    N = 200_000
-    _f = sfs.compute_frequencies(N)
+def plot_sfs_simulations_data(
+    simulated: Dict[int, Dict[str, sfs.Sfs]],
+    pop_size: int,
+    donors: List[Donor],
+    options: PlotOptions,
+    path2mitchell: Path,
+    id2plot: str | None = None,
+    remove_indels: bool = False,
+    plot_one_over_f: bool = False,
+):
+    _f = sfs.compute_frequencies(pop_size)
 
-    for i, donor in enumerate(summary.donor_id.unique()):
-        age = summary.loc[summary.donor_id == donor, "age"].iloc[0]
-
-        print(f"donor {donor}")
-
-        filtered_matrix = mitchell.filter_mutations(
-            *mitchell.load_patient(
-                donor,
-                path2data / f"mutMatrix{donor}.csv",
-                path2data / f"mutType{donor}.csv",
+    for donor in donors:
+        print(f"donor {donor.name}")
+        if remove_indels:
+            filtered_matrix = mitchell.filter_mutations(
+                *mitchell.load_patient(
+                    donor.name,
+                    path2mitchell / f"mutMatrix{donor}.csv",
+                    path2mitchell / f"mutType{donor}.csv",
+                )
             )
-        )
+        else:
+            filtered_matrix = mitchell.load_patient(
+                donor.name,
+                path2mitchell / f"mutMatrix{donor}.csv",
+                path2mitchell / f"mutType{donor}.csv",
+            )[0]
 
         sfs_donor = filtered_matrix.sum(axis=1).value_counts(normalize=True)
-
         sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
-
         x_sfs = sfs_donor.index.to_numpy(dtype=int)
-
         y_sfs = sfs_donor.to_numpy()
 
-        # sample size
-
-        cells = summary.loc[summary.donor_id == donor, "cells"].unique()[0]
-
-        correction = sfs.SamplingCorrection(N, cells)
-
-        assert cells <= 1000
+        correction = sfs.SamplingCorrection(pop_size, donor.cells)
+        assert donor.cells <= 1000
 
         sampled_f, y = sfs.compute_variants(
-            correction, sfs.Correction.ONE_OVER_F, cells
+            correction, sfs.Correction.ONE_OVER_F, donor.cells
         )
 
         sampled_f_squared, y_squared = sfs.compute_variants(
-            correction, sfs.Correction.ONE_OVER_F_SQUARED, cells
+            correction, sfs.Correction.ONE_OVER_F_SQUARED, donor.cells
         )
 
-        sfs_simulations = pd.Series(
-            simulated[closest_age[age]][id2plot], dtype=int
-        ).value_counts()
+        # if id2plot is specified, plot the sfs of the simulated run
+        if id2plot:
+            sfs_simulations = pd.Series(
+                simulated[donor.closest_age][id2plot], dtype=int
+            ).value_counts()
 
-        sfs_simulations /= sfs_simulations.max()
+            sfs_simulations /= sfs_simulations.max()
+            sfs_simulations = Distribution(sfs_simulations.to_dict())
+        else:  # average over all simulations otherwise
+            sfs_simulations = sfs.pooled_sfs(simulated[donor.closest_age])
 
-        fig, ax = plt.subplots(1, 1, figsize=FIGSIZE)
-
+        fig, ax = plt.subplots(1, 1, figsize=options.figsize)
+        if plot_one_over_f:
+            ax.plot(
+                _f[: donor.cells],
+                sampled_f,
+                label=f"$1/f$ sampled",
+                alpha=0.4,
+                linestyle="--",
+                c="black",
+            )
         ax.plot(
-            _f[:cells],
-            sampled_f,
-            label=f"$1/f$ sampled",
-            alpha=0.4,
-            linestyle="--",
-            c="black",
-        )
-
-        ax.plot(
-            _f[:cells],
+            _f[: donor.cells],
             sampled_f_squared / sampled_f_squared.max(),
             label=f"$1/f^2$ sampled",
             alpha=0.4,
@@ -212,70 +230,85 @@ def plot_sfs_simulations_data(summary, simulated, cells_sampled: int, id2plot: s
         ax.plot(
             x_sfs,
             sfs_donor.to_numpy(),
-            label=f"{donor}",
+            label=f"{donor.name}",
             linestyle="",
             marker="x",
             c="blue",
             alpha=0.7,
         )
-
         ax.plot(
-            sfs_simulations.index,
-            sfs_simulations,
+            list(sfs_simulations.keys()),
+            list(sfs_simulations.values()),
             linestyle="",
             marker="o",
-            label="simulation",
+            label="simulation"
+            if id2plot
+            else f"avg over {len(simulated[donor.closest_age])} simulations",
             c="purple",
             alpha=0.7,
         )
-
         ax.set_yscale("log")
-
         ax.set_xscale("log")
-
         ax.set_xlabel("j cells")
-
         ax.set_ylabel("normalised nb of muts in j cells")
-
-        ax.set_ylim([get_ymin(y_sfs.min(), sfs_simulations.min()), 2])
-
+        ax.set_ylim([get_ymin(y_sfs.min(), min(sfs_simulations.values())), 2])
         ax.set_xlim(
-            [0.8, get_xmax(x_sfs.max(), sfs_simulations.index.to_numpy().max())]
+            [0.8, get_xmax(x_sfs.max(), max(sfs_simulations.keys())]
         )
-
         ax.legend()
-
-        ax.set_title(f"age {age}")
-
-        if SAVE:
-            plt.savefig(f"./{donor}_sfs_{cells_sampled}cells{EXTENSION}")
-
+        ax.set_title(f"age {donor.age}")
+        if options.save:
+            plt.savefig(f"./{donor.name}_sfs_{donor.cells}cells{options.extension}")
         plt.show()
 
 
-def load_sfs_simulations(sim_options):
-    simulated = dict()
-
-    for age in ages:
-        print(f"\nloading sfs for age {age}")
-
-        idx_timepoint, closest_age_ = get_idx_timepoint_from_age(
+def donors_from_mitchell(
+    mitchell_data: pd.DataFrame,
+    sim_options: SimulationOptions,
+    verbosity: bool = False,
+) -> List[Donor]:
+    donors = list()
+    for row in mitchell_data[["donor_id", "age", "cells"]].drop_duplicates().iterrows():
+        donor_id, age, cells = row[1].donor_id, row[1].age, row[1].cells
+        idx_timepoint, closest_age = get_idx_timepoint_from_age(
             age,
             sim_options.last_timepoint_years,
             nb_timepoints=sim_options.nb_timepoints,
+            verbosity=verbosity,
+        )
+        if verbosity:
+            print(
+                f"\ncreating donor {donor_id} with age {age} and closest age {closest_age}"
+            )
+        donors.append(
+            Donor(
+                age=age,
+                name=donor_id,
+                cells=cells,
+                closest_age=closest_age,
+                id_timepoint=idx_timepoint,
+            )
         )
 
-        closest_age[age] = closest_age_
+    return donors
 
-        simulated[closest_age[age]] = dict()
+
+def load_sfs_simulations(
+    donors: List[Donor], sim_options: SimulationOptions
+) -> Dict[int, Dict[str, sfs.Sfs]]:
+    simulated = dict()
+
+    for donor in donors:
+        print(f"\nloading sfs for donor {donor.name} with age {donor.age}")
+
+        simulated[donor.closest_age] = dict()
 
         for idx_sim, simulation in sfs.load_sfs(
             sim_options.path2save,
             runs=sim_options.runs,
             cells=sim_options.sample,
-            timepoint=idx_timepoint,
+            timepoint=donor.id_timepoint,
         ).items():
-            simulated[closest_age[age]][idx_sim] = simulation
+            simulated[donor.closest_age][idx_sim] = simulation
 
     return simulated
-"""

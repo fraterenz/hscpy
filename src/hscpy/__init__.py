@@ -13,7 +13,7 @@ class Measurement(StrEnum):
 
 
 def get_idx_timepoint_from_age(
-    age: int, years: int, nb_timepoints: int
+    age: int, years: int, nb_timepoints: int, verbosity: bool
 ) -> Tuple[int, int]:
     """Find the idx of the timepoint associated to `age`.
 
@@ -34,9 +34,10 @@ def get_idx_timepoint_from_age(
     except ValueError:
         closest_age = min(timepoints, key=lambda x: abs(x - age))
         found = timepoints.index(closest_age) + 1
-        print(
-            f"age {age} cannot be mapped, found mapping of timepoint {found} for the closest age of {closest_age}"
-        )
+        if verbosity:
+            print(
+                f"age {age} cannot be mapped, found mapping of timepoint {found} for the closest age of {closest_age}"
+            )
     return found, closest_age
 
 

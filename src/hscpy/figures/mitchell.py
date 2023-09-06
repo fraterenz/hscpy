@@ -11,11 +11,10 @@ def load_patient(
     # f"../mutType{patient}.csv"
     mut_matrix = pd.read_csv(path2matrix, index_col=0)
     mut_type = pd.read_csv(path2type, usecols=[1], dtype="category")
-    mut_matrix = mut_matrix.applymap(int)  # map 0.5 to 0
+    mut_matrix = mut_matrix.map(int)  # map 0.5 to 0
     mut_matrix = pd.DataFrame(mut_matrix, dtype=int)
     return mut_matrix, mut_type
 
 
 def filter_mutations(m_matrix: pd.DataFrame, m_type: pd.DataFrame) -> pd.DataFrame:
-    return m_matrix
-    # return m_matrix.iloc[m_type[m_type == "SNV"].dropna().index, :]
+    return m_matrix.iloc[m_type[m_type == "SNV"].dropna().index, :]
