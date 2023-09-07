@@ -10,13 +10,14 @@ def show_burden_plots(
     plot_options: PlotOptions,
     ages: Set[int],
     id2plot: str = "3",
+    verbosity: bool = False,
 ):
     closest_age = dict.fromkeys(ages)
     simulated = dict()
     for age in ages:
         print(f"\nloading mutational burden for age {age}")
         idx_timepoint, closest_age_ = get_idx_timepoint_from_age(
-            age, sim_options.last_timepoint_years, sim_options.nb_timepoints
+            age, sim_options.last_timepoint_years, sim_options.nb_timepoints, verbosity,
         )
         closest_age[age] = closest_age_
         simulated[closest_age[age]] = dict()

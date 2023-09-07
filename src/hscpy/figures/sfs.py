@@ -99,7 +99,7 @@ def show_entropy_plots(
                 for idx_sim, simulation in sfs.load_sfs_entropy(
                     sim_options.path2save,
                     runs=sim_options.runs,
-                    cells=sim_options.cells,
+                    cells=sim_options.sample,
                     timepoint=idx_timepoint,
                 ).items():
                     simulated[closest_age[age]][idx_sim] = simulation
@@ -107,7 +107,7 @@ def show_entropy_plots(
                 for idx_sim, simulation in sfs.load_sfs(
                     sim_options.path2save,
                     runs=sim_options.runs,
-                    cells=sim_options.cells,
+                    cells=sim_options.sample,
                     timepoint=idx_timepoint,
                 ).items():
                     simulated[closest_age[age]][idx_sim] = simulation
@@ -156,6 +156,7 @@ def get_xmax(max1: int, max2: int) -> float:
 def plot_sfs_simulations_data(
     simulated: Dict[int, Dict[str, sfs.Sfs]],
     pop_size: int,
+    sample_size: int,
     donors: List[Donor],
     options: PlotOptions,
     path2mitchell: Path,
@@ -171,15 +172,15 @@ def plot_sfs_simulations_data(
             filtered_matrix = mitchell.filter_mutations(
                 *mitchell.load_patient(
                     donor.name,
-                    path2mitchell / f"mutMatrix{donor}.csv",
-                    path2mitchell / f"mutType{donor}.csv",
+                    path2mitchell / f"mutMatrix{donor.name}.csv",
+                    path2mitchell / f"mutType{donor.name}.csv",
                 )
             )
         else:
             filtered_matrix = mitchell.load_patient(
                 donor.name,
-                path2mitchell / f"mutMatrix{donor}.csv",
-                path2mitchell / f"mutType{donor}.csv",
+                path2mitchell / f"mutMatrix{donor.name}.csv",
+                path2mitchell / f"mutType{donor.name}.csv",
             )[0]
 
         sfs_donor = filtered_matrix.sum(axis=1).value_counts(normalize=True)
@@ -202,9 +203,7 @@ def plot_sfs_simulations_data(
         if id2plot:
             sfs_simulations = pd.Series(
                 simulated[donor.closest_age][id2plot], dtype=int
-            ).value_counts()
-
-            sfs_simulations /= sfs_simulations.max()
+            ).value_counts(normalize=True)
             sfs_simulations = Distribution(sfs_simulations.to_dict())
         else:  # average over all simulations otherwise
             sfs_simulations = sfs.pooled_sfs(simulated[donor.closest_age])
@@ -251,14 +250,14 @@ def plot_sfs_simulations_data(
         ax.set_xscale("log")
         ax.set_xlabel("j cells")
         ax.set_ylabel("normalised nb of muts in j cells")
-        ax.set_ylim([get_ymin(y_sfs.min(), min(sfs_simulations.values())), 2])
+        # ax.set_ylim([get_ymin(y_sfs.min(), min(sfs_simulations.values())), 2])
         ax.set_xlim(
-            [0.8, get_xmax(x_sfs.max(), max(sfs_simulations.keys())]
+            [0.8, get_xmax(x_sfs.max(), max(sfs_simulations.keys()))]
         )
         ax.legend()
         ax.set_title(f"age {donor.age}")
         if options.save:
-            plt.savefig(f"./{donor.name}_sfs_{donor.cells}cells{options.extension}")
+            plt.savefig(f"./{donor.name}_sfs_{donor.cells}donorcells_{sample_size}cells{options.extension}")
         plt.show()
 
 
