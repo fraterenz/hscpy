@@ -85,7 +85,6 @@ def show_entropy_plots(
     for age in ages:
         if age < 2:
             continue
-        print(f"\nloading mutational burden for age {age}")
         idx_timepoint, closest_age_ = get_idx_timepoint_from_age(
             age,
             sim_options.last_timepoint_years,
