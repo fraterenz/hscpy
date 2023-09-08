@@ -28,7 +28,7 @@ def load(
             measurement=measurement, path2dir=path2dir, cells=cells, timepoint=timepoint
         )
     except AssertionError as e:
-        e.add_note(f"cannot load SFS from {path2dir} for timepoint {timepoint}: {e}")
+        e.add_note(f"cannot load {measurement} from {path2dir} for timepoint {timepoint}: {e}")
         raise e
     i = 0
     for i, file in enumerate(timepoint_path.iterdir(), 1):
