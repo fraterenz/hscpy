@@ -154,7 +154,7 @@ def get_xmax(max1: int, max2: int) -> float:
 
 def plot_sfs_simulations_data(
     simulated: Dict[int, Dict[str, sfs.Sfs]],
-    corrected_variants: Dict[int, sfs.CorrectedVariants],
+    corrected_variants: Dict[str, sfs.CorrectedVariants],
     pop_size: int,
     sample_size: int,
     donors: List[Donor],
@@ -164,7 +164,6 @@ def plot_sfs_simulations_data(
     remove_indels: bool = False,
 ):
     for donor in donors:
-        print(f"donor {donor.name}")
         if remove_indels:
             filtered_matrix = mitchell.filter_mutations(
                 *mitchell.load_patient(
@@ -183,12 +182,9 @@ def plot_sfs_simulations_data(
         sfs_donor = filtered_matrix.sum(axis=1).value_counts(normalize=True)
         sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
         x_sfs = sfs_donor.index.to_numpy(dtype=int)
-        y_sfs = sfs_donor.to_numpy()
 
         assert donor.cells <= 1000
-        correction = sfs.compute_variants(
-            corrected_variants[donor.closest_age].correction, pop_size, donor.cells
-        )
+        correction = corrected_variants[donor.name]
         sampled_f, y = (
             correction.corrected_variants,
             correction.variant2correct,
@@ -205,11 +201,11 @@ def plot_sfs_simulations_data(
 
         fig, ax = plt.subplots(1, 1, figsize=options.figsize)
         ax.plot(
-            corrected_variants[donor.closest_age].frequencies[: donor.cells],
-            sampled_f,
-            label="$1/f$ sampled"
-            if corrected_variants[donor.closest_age].correction
-            else "$1/f^2$ sampled",
+            corrected_variants[donor.name].frequencies[: donor.cells],
+            sampled_f / sampled_f.max(),
+            label="$1/f^2$ sampled"
+            if correction.correction == sfs.Correction.ONE_OVER_F_SQUARED
+            else "$1/f$ sampled",
             alpha=0.4,
             linestyle="--",
             c="black",
