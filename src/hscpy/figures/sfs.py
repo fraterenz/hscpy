@@ -154,6 +154,7 @@ def get_xmax(max1: int, max2: int) -> float:
 
 def plot_sfs_simulations_data(
     simulated: Dict[int, Dict[str, sfs.Sfs]],
+    corrected_variants: Dict[int, sfs.CorrectedVariants],
     pop_size: int,
     sample_size: int,
     donors: List[Donor],
@@ -161,10 +162,7 @@ def plot_sfs_simulations_data(
     path2mitchell: Path,
     id2plot: str | None = None,
     remove_indels: bool = False,
-    plot_one_over_f: bool = False,
 ):
-    _f = sfs.compute_frequencies(pop_size)
-
     for donor in donors:
         print(f"donor {donor.name}")
         if remove_indels:
@@ -187,15 +185,13 @@ def plot_sfs_simulations_data(
         x_sfs = sfs_donor.index.to_numpy(dtype=int)
         y_sfs = sfs_donor.to_numpy()
 
-        correction = sfs.SamplingCorrection(pop_size, donor.cells)
         assert donor.cells <= 1000
-
-        sampled_f, y = sfs.compute_variants(
-            correction, sfs.Correction.ONE_OVER_F, donor.cells
+        correction = sfs.compute_variants(
+            corrected_variants[donor.closest_age].correction, pop_size, donor.cells
         )
-
-        sampled_f_squared, y_squared = sfs.compute_variants(
-            correction, sfs.Correction.ONE_OVER_F_SQUARED, donor.cells
+        sampled_f, y = (
+            correction.corrected_variants,
+            correction.variant2correct,
         )
 
         # if id2plot is specified, plot the sfs of the simulated run
@@ -208,20 +204,14 @@ def plot_sfs_simulations_data(
             sfs_simulations = sfs.pooled_sfs(simulated[donor.closest_age])
 
         fig, ax = plt.subplots(1, 1, figsize=options.figsize)
-        if plot_one_over_f:
-            ax.plot(
-                _f[: donor.cells],
-                sampled_f,
-                label=f"$1/f$ sampled",
-                alpha=0.4,
-                linestyle="--",
-                c="black",
-            )
         ax.plot(
-            _f[: donor.cells],
-            sampled_f_squared / sampled_f_squared.max(),
-            label=f"$1/f^2$ sampled",
+            corrected_variants[donor.closest_age].frequencies[: donor.cells],
+            sampled_f,
+            label="$1/f$ sampled"
+            if corrected_variants[donor.closest_age].correction
+            else "$1/f^2$ sampled",
             alpha=0.4,
+            linestyle="--",
             c="black",
         )
 
@@ -250,13 +240,13 @@ def plot_sfs_simulations_data(
         ax.set_xlabel("j cells")
         ax.set_ylabel("normalised nb of muts in j cells")
         # ax.set_ylim([get_ymin(y_sfs.min(), min(sfs_simulations.values())), 2])
-        ax.set_xlim(
-            [0.8, get_xmax(x_sfs.max(), max(sfs_simulations.keys()))]
-        )
+        ax.set_xlim([0.8, get_xmax(x_sfs.max(), max(sfs_simulations.keys()))])
         ax.legend()
         ax.set_title(f"age {donor.age}")
         if options.save:
-            plt.savefig(f"./{donor.name}_sfs_{donor.cells}donorcells_{sample_size}cells{options.extension}")
+            plt.savefig(
+                f"./{donor.name}_sfs_{donor.cells}donorcells_{sample_size}cells{options.extension}"
+            )
         plt.show()
 
 

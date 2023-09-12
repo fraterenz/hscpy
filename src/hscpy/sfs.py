@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import sys
 import csv
 import numpy as np
@@ -28,7 +29,9 @@ def load(
             measurement=measurement, path2dir=path2dir, cells=cells, timepoint=timepoint
         )
     except AssertionError as e:
-        e.add_note(f"cannot load {measurement} from {path2dir} for timepoint {timepoint}: {e}")
+        e.add_note(
+            f"cannot load {measurement} from {path2dir} for timepoint {timepoint}: {e}"
+        )
         raise e
     i = 0
     for i, file in enumerate(timepoint_path.iterdir(), 1):
@@ -94,14 +97,6 @@ class Correction(StrEnum):
     ONE_OVER_F_SQUARED = auto()
 
 
-class SamplingCorrection:
-    def __init__(self, pop_size: int, sample_size: int):
-        self.pop_size = pop_size
-        self.sample_size = sample_size
-        self.correction = compute_sampling_correction(n=pop_size, s=sample_size)
-        self.frequencies = compute_frequencies(pop_size)
-
-
 def compute_frequencies(pop_size: int) -> np.ndarray:
     return np.arange(1, pop_size + 1, step=1, dtype=int)
 
@@ -116,9 +111,17 @@ def compute_sampling_correction(n: int, s: int) -> np.ndarray:
     ).T
 
 
+@dataclass
+class CorrectedVariants:
+    correction: Correction
+    corrected_variants: np.ndarray
+    variant2correct: np.ndarray
+    frequencies: np.ndarray
+
+
 def compute_variants(
-    s_correction: SamplingCorrection, correction: Correction, sample_size: int
-) -> Tuple[np.ndarray, np.ndarray]:
+    correction: Correction, pop_size: int, sample_size: int
+) -> CorrectedVariants:
     """
     _f = range(0,1,length=N+1)
     nThGr_f = (1 ./ _f).^2
@@ -130,15 +133,17 @@ def compute_variants(
             )
     end
     """
+    frequencies = compute_frequencies(pop_size)
     if correction == Correction.ONE_OVER_F:
-        variants2correct = 1 / s_correction.frequencies
+        variants2correct = 1 / frequencies
     elif correction == Correction.ONE_OVER_F_SQUARED:
-        variants2correct = 1 / s_correction.frequencies**2
+        variants2correct = 1 / frequencies**2
     else:
         raise ValueError
 
-    assert (
-        variants2correct.shape[0] == s_correction.pop_size
-    ), f"{variants2correct.shape[0]}"
-    corrected = s_correction.correction[:sample_size, :] @ variants2correct
-    return corrected, variants2correct
+    assert variants2correct.shape[0] == pop_size, f"{variants2correct.shape[0]}"
+    corrected = (
+        compute_sampling_correction(pop_size, sample_size)[:sample_size, :]
+        @ variants2correct
+    )
+    return CorrectedVariants(correction, corrected, variants2correct, frequencies)
