@@ -1,8 +1,18 @@
+from dataclasses import dataclass
 from pathlib import Path
 import sys
 from typing import Tuple
 import numpy as np
 from enum import StrEnum, auto
+
+
+@dataclass
+class Donor:
+    age: int
+    closest_age: int
+    cells: int
+    name: str
+    id_timepoint: int
 
 
 class Measurement(StrEnum):

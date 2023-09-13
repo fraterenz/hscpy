@@ -100,3 +100,8 @@ def single_cell_mutations_from_burden(burden: snapshot.Histogram) -> np.ndarray:
         for cell in range(0, jcells):
             muts.append(jmuts)
     return np.array(muts, dtype=int)
+
+
+def pooled_burden(burden_: Dict[str, snapshot.Histogram]) -> snapshot.Distribution:
+    histograms = [b for b in burden_.values()]
+    return snapshot.Uniformise.pooled_distribution(histograms)

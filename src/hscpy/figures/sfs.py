@@ -9,16 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from hscpy.figures.options import PlotOptions, SimulationOptions
 from hscpy.figures import mitchell
-from hscpy import get_idx_timepoint_from_age, sfs
-
-
-@dataclass
-class Donor:
-    age: int
-    closest_age: int
-    cells: int
-    name: str
-    id_timepoint: int
+from hscpy import Donor, get_idx_timepoint_from_age, sfs
 
 
 def show_sfs_last_timepoint_plots(
