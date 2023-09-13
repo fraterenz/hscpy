@@ -196,8 +196,17 @@ def plot_sfs_simulations_data(
                 simulated[donor.closest_age][id2plot], dtype=int
             ).value_counts(normalize=True)
             sfs_simulations = Distribution(sfs_simulations.to_dict())
+            # create a np array just to have the same type for jmuts
+            jcells, jmuts = list(sfs_simulations.keys()), np.array(
+                list(sfs_simulations.values()), dtype=float
+            )
         else:  # average over all simulations otherwise
             sfs_simulations = sfs.pooled_sfs(simulated[donor.closest_age])
+            jcells, jmuts = list(sfs_simulations.keys()), np.array(
+                list(sfs_simulations.values()), dtype=float
+            )
+            # normalise the averages
+            jmuts /= jmuts.max()
 
         fig, ax = plt.subplots(1, 1, figsize=options.figsize)
         ax.plot(
@@ -220,9 +229,10 @@ def plot_sfs_simulations_data(
             c="blue",
             alpha=0.7,
         )
+
         ax.plot(
-            list(sfs_simulations.keys()),
-            list(sfs_simulations.values()),
+            jcells,
+            jmuts,
             linestyle="",
             marker="o",
             label="simulation"
