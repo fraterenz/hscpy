@@ -36,7 +36,7 @@ def get_idx_timepoint_from_age(
         print(f"arg `age` must be int found {type(age)} instead")
         sys.exit(1)
 
-    timepoints = list(np.linspace(1, years + 1, nb_timepoints))[::-1]
+    timepoints = list(np.linspace(0, years, nb_timepoints))[::-1]
 
     try:
         found = timepoints.index(age) + 1
