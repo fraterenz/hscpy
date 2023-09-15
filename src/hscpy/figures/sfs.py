@@ -256,14 +256,14 @@ def donors_from_mitchell(
     for row in mitchell_data[["donor_id", "age", "cells"]].drop_duplicates().iterrows():
         donor_id, age, cells = row[1].donor_id, row[1].age, row[1].cells
         idx_timepoint, closest_age = get_idx_timepoint_from_age(
-            age,
-            sim_options.last_timepoint_years,
+            age=age,
+            years=sim_options.last_timepoint_years,
             nb_timepoints=sim_options.nb_timepoints,
             verbosity=verbosity,
         )
         if verbosity:
             print(
-                f"\ncreating donor {donor_id} with age {age} and closest age {closest_age}"
+                f"\ncreating donor {donor_id} with age {age} and closest age {closest_age} using {sim_options.nb_subclones} timepoints and year {sim_options.last_timepoint_years}"
             )
         donors.append(
             Donor(
@@ -279,7 +279,7 @@ def donors_from_mitchell(
 
 
 def load_sfs_simulations(
-    donors: List[Donor], sim_options: SimulationOptions
+    donors: List[Donor], sim_options: SimulationOptions, verbosity: bool = False
 ) -> Dict[int, Dict[str, sfs.Sfs]]:
     simulated = dict()
 
@@ -287,12 +287,17 @@ def load_sfs_simulations(
         print(f"\nloading sfs for donor {donor.name} with age {donor.age}")
 
         simulated[donor.closest_age] = dict()
+        if verbosity:
+            print(
+                f"{sim_options.runs} runs from {sim_options.path2save} and timepoint {donor.id_timepoint}"
+            )
 
         for idx_sim, simulation in sfs.load_sfs(
             sim_options.path2save,
             runs=sim_options.runs,
             cells=sim_options.sample,
             timepoint=donor.id_timepoint,
+            verbosity=verbosity,
         ).items():
             simulated[donor.closest_age][idx_sim] = simulation
 

@@ -21,7 +21,12 @@ def load_sfs_entropy(
 
 
 def load(
-    path2dir: Path, runs: int, measurement: Measurement, cells: int, timepoint: int
+    path2dir: Path,
+    runs: int,
+    measurement: Measurement,
+    cells: int,
+    timepoint: int,
+    verbosity: bool = False,
 ) -> Dict[str, Sfs]:
     sfs = dict()
     try:
@@ -34,7 +39,11 @@ def load(
         )
         raise e
     i = 0
+    if verbosity:
+        print(f"path: {timepoint_path}")
     for i, file in enumerate(timepoint_path.iterdir(), 1):
+        if verbosity:
+            print(f"loading from {file}")
         with open(file, "r") as csvfile:
             sfsreader = csv.reader(csvfile, delimiter=",")
             sfs[file.stem] = list()
@@ -65,7 +74,11 @@ def pooled_sfs(sfs_: Dict[str, Sfs]) -> snapshot.Distribution:
 
 
 def load_sfs(
-    path2dir: Path, runs: int, cells: int, timepoint: int = 1
+    path2dir: Path,
+    runs: int,
+    cells: int,
+    timepoint: int = 1,
+    verbosity: bool = False,
 ) -> Dict[str, Sfs]:
     """load all sfs for a specific timepoint, by default load the burden of the
     last timepoint.
@@ -73,7 +86,7 @@ def load_sfs(
     Remember that rust saves timepoints in decreasing order, hence the last
     timepoint is 1.
     """
-    return load(path2dir, runs, Measurement.SFS, cells, timepoint)
+    return load(path2dir, runs, Measurement.SFS, cells, timepoint, verbosity)
 
 
 def pandafy_sfs_dict(sfs_: Dict[str, Sfs]) -> pd.DataFrame:
