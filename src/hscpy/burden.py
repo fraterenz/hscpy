@@ -46,7 +46,9 @@ def load_burden(
     return burden
 
 
-def compute_mean_variance(burden: snapshot.Histogram) -> Tuple[float, float]:
+def compute_mean_variance(
+    burden: snapshot.Histogram | snapshot.Distribution,
+) -> Tuple[float, float]:
     cells = sum(burden.values())
     mean = sum(map(lambda entry: entry[0] * entry[1] / cells, burden.items()))
     variance = sum(
@@ -55,7 +57,7 @@ def compute_mean_variance(burden: snapshot.Histogram) -> Tuple[float, float]:
     return mean, variance
 
 
-def plot_burden(burden: snapshot.Histogram, ax, **kwargs):
+def plot_burden(burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs):
     ax.bar(
         list(burden.keys()),
         list(burden.values()),
@@ -63,7 +65,7 @@ def plot_burden(burden: snapshot.Histogram, ax, **kwargs):
         alpha=kwargs["alpha"],
         width=1,
     )
-    ymax = max(burden.values())
+    ymax = kwargs.get("ymax", max(burden.values()))
     mean, var = compute_mean_variance(burden)
     ax.axvline(
         x=mean,
