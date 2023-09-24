@@ -8,6 +8,11 @@ from pathlib import Path
 from futils import snapshot
 
 
+def load(file: Path) -> snapshot.Histogram:
+    with open(file, "r") as f:
+        return snapshot.Histogram({int(x): int(y) for x, y in json.load(f).items()})
+
+
 def load_burden(
     path2dir: Path, runs: int, cells: int, timepoint: int = 1
 ) -> Dict[str, snapshot.Histogram]:
@@ -31,10 +36,7 @@ def load_burden(
     i = 0
     for i, file in enumerate(timepoint_path.iterdir(), 1):
         try:
-            with open(file, "r") as f:
-                burden[file.stem] = snapshot.Histogram(
-                    {int(x): int(y) for x, y in json.load(f).items()}
-                )
+            burden[file.stem] = load(file)
         except json.JSONDecodeError as e:
             print(f"Error in opening {file} {e}")
             sys.exit(1)
