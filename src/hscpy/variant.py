@@ -12,22 +12,22 @@ def load_variant_fractions(
     ), "Wrong number of timepoints saved"
 
     data = []
-    empty, i = 0, 0
+    found = 0
     for path2snapshot in sorted(
         list(path2variants.iterdir()),
         key=lambda path2name: int(path2name.name),
         reverse=True,
     ):  # need to reverse because rust saves from the last timepoint
+        found = 0
         for file in path2snapshot.iterdir():
             with open(file, "r") as f:
                 for i, ele in enumerate(f.read().split(",")):
                     # remove wild type clone
                     if i > 0 and ele:
                         data.append(float(ele))
-                else:
-                    if i == 0:
-                        empty += 1
+            found += 1
+        assert found == runs, f"for timepoint {path2snapshot} found {found} runs instead of {runs}"
 
     return np.array(data, dtype=float).reshape(
-        nb_timepoints, runs - empty, subclones - 1
+        nb_timepoints, runs, subclones - 1
     )  # timepoints x RUNS x MAX_SUBCLONES - 1 (rm wildtype)
