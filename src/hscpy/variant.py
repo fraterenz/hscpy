@@ -26,7 +26,9 @@ def load_variant_fractions(
                     if i > 0 and ele:
                         data.append(float(ele))
             found += 1
-        assert found == runs, f"for timepoint {path2snapshot} found {found} runs instead of {runs}"
+        assert (
+            found == runs
+        ), f"for timepoint {path2snapshot} found {found} runs instead of {runs}"
 
     return np.array(data, dtype=float).reshape(
         nb_timepoints, runs, subclones - 1
