@@ -1,110 +1,151 @@
+from pathlib import Path
+from typing import Dict
+from futils import snapshot
+from matplotlib.ticker import MultipleLocator
 import matplotlib.pyplot as plt
-from typing import Set
-from hscpy import get_idx_timepoint_from_age
-from hscpy import burden
-from hscpy.burden import load_burden, plot_burden
-from hscpy.figures.options import PlotOptions, SimulationOptions
+import pandas as pd
+import numpy as np
+import seaborn as sns
+
+from hscpy import Measurement, burden
+from hscpy.figures import PlotOptions
+from hscpy.figures.simulations import Simulations
 
 
-def show_burden_plots(
-    sim_options: SimulationOptions,
-    plot_options: PlotOptions,
-    ages: Set[int],
-    id2plot: str | None = None,
-    verbosity: bool = False,
+def plot_simulations_burden(
+    sims: Simulations, options_plot: PlotOptions, summary: pd.DataFrame
 ):
-    closest_age = dict.fromkeys(ages)
-    simulated = dict()
-    for age in ages:
-        print(f"\nloading mutational burden for age {age}")
-        idx_timepoint, closest_age_ = get_idx_timepoint_from_age(
-            age,
-            sim_options.last_timepoint_years,
-            sim_options.nb_timepoints,
-            verbosity,
-        )
-        closest_age[age] = closest_age_
-        simulated[closest_age[age]] = dict()
-        try:
-            for idx_sim, simulation in load_burden(
-                sim_options.path2save,
-                runs=sim_options.runs,
-                cells=sim_options.sample,
-                timepoint=idx_timepoint,
-            ).items():
-                try:
-                    simulation.pop(0)
-                except KeyError:
-                    pass
-                if id2plot:
-                    simulation = {
-                        k: val / sim_options.sample for k, val in simulation.items()
-                    }
+    age_simulations = np.linspace(
+        0, sims.sim_options.last_timepoint_years, sims.sim_options.nb_timepoints
+    )[::-1]
 
-                simulated[closest_age[age]][idx_sim] = simulation
-                if verbosity:
-                    print(
-                        f"\t total mutational burden of {sum([mut * cells for mut, cells in simulation.items()])}"
-                    )
-        except AssertionError:
-            print(
-                f"skipping timepoint {idx_timepoint} with age {closest_age_} because empty mutational burden"
-            )
+    fig, ax = plt.subplots(1, 1, figsize=options_plot.figsize)
 
-    fig, ax = plt.subplots(1, 1, figsize=plot_options.figsize)
-    if id2plot:
-        ymax = max(
-            [max(burden_dict[id2plot].values()) for burden_dict in simulated.values()]
+    ax.plot(
+        summary["age"],
+        summary["number_mutations"],
+        linestyle="",
+        marker="o",
+        color="purple",
+        alpha=0.01,
+        label="Mitchell's",
+        mew=2,
+    )
+
+    ax.plot(
+        sims.mean_mutations.age,
+        sims.mean_mutations.number_mutations,
+        "x",
+        c="#00cd00",
+        label="avg Mitchell's",
+        mew=2,
+    )
+
+    ax.plot(
+        age_simulations,
+        sims.m * age_simulations + sims.c,
+        linestyle="--",
+        c="#00cd00",
+        label=f"fit Mitchell's, m={sims.m:.1f}, c={sims.c:.1f}",
+    )
+
+    means = []
+
+    for idx, age in enumerate(age_simulations, 1):
+        # plot only the snvs
+        pooled = burden.pooled_burden(sims.my_burden[idx])
+        mean, _ = burden.compute_mean_variance(pooled)
+        means.append(mean)
+        snvs = [k for k, i in pooled.items() if i > 0.0]
+
+        ax.plot(
+            [age] * len(snvs),
+            snvs,
+            "o",
+            c="blue",
+            alpha=0.01,
+            label="pooled sims" if idx == 1 else None,
         )
-    else:
-        ymax = 0
-    for (age, burden_dict), c in zip(
-        simulated.items(),
-        (
-            "grey",
-            "yellowgreen",
-            "orange",
-            "cyan",
-            "blue",
-            "pink",
-            "purple",
-            "green",
-            "brown",
-        ),
-    ):
-        if id2plot:
-            plot_burden(
-                burden_dict[id2plot],
-                ax,
-                label=f"{age:.1f}",
-                color=c,
-                alpha=0.5,
-                ymax=ymax,
-            )
-            cells = max(burden_dict[id2plot].values())
-            if cells > ymax:
-                ymax = cells
-        else:
-            burdens = burden.pooled_burden(burden_dict)
-            ymax = max(burdens.values())
-            plot_burden(
-                burdens,
-                ax,
-                label=f"{age:.1f}",
-                color=c,
-                alpha=0.5,
-                ymax=ymax,
-            )
-    ax.legend(title="age")
-    # ax.set_ylim((0, ymax))
-    ax.set_xlabel("single nucleotide variant")
-    ax.set_ylabel("density")
-    if id2plot:
-        ax.set_title("single cell mutational burden for one realisation")
-    else:
-        ax.set_title(
-            f"single cell mutational burden averaged over {sim_options.runs} runs"
-        )
-    if plot_options.save:
-        plt.savefig(sim_options.path2save / f"burden{plot_options.extension}")
+
+    ax.plot(
+        age_simulations,
+        means,
+        "v",
+        label=f"avg from {sims.sim_options.runs} sims",
+        c="#00ffff",
+        mew=2,
+        alpha=1,
+    )
+
+    A_sims = np.vstack([age_simulations, np.ones(len(age_simulations))]).T
+
+    m_sims, c_sims = np.linalg.lstsq(A_sims, means, rcond=None)[0]
+
+    ax.plot(
+        age_simulations,
+        m_sims * age_simulations + c_sims,
+        linestyle="--",
+        c="#00ffff",
+        label=f"fit sim's, m={m_sims:.1f}, c={c_sims:.1f}",
+        alpha=1,
+    )
+
+    ax.set_xlabel("age [years]", fontsize="xx-large")
+    ax.set_ylabel("number of SNVs", fontsize="xx-large")
+    ax.tick_params(axis="both", which="major", labelsize=15)
+    ax.xaxis.set_minor_locator(MultipleLocator(5))
+    ax.tick_params(which="minor", length=3, width=0.8)
+    leg = ax.legend(prop={"size": 13}, fancybox=False)
+    for lh in leg.legend_handles:
+        lh.set_alpha(0.6)
+    fig.tight_layout()
+
+    if options_plot.save:
+        plt.savefig(f"burden{options_plot.extension}")
+
+    plt.show()
+
+    fig, ax = plt.subplots(1, 1, tight_layout=True, figsize=(6, 4))
+    sns.histplot(
+        data=summary[summary.age == 0],
+        x="number_mutations",
+        hue="donor_id",
+        kde=False,
+        ax=ax,
+        stat="density",
+        discrete=True,
+        common_norm=False,
+    )
+
+    pooled = burden.pooled_burden(sims.my_burden[sims.sim_options.nb_timepoints])
+    ax.bar(
+        x=list(pooled.keys()),
+        height=list(pooled.values()),
+        width=1,
+        color="purple",
+        alpha=0.3,
+        edgecolor="black",
+        label=f"{sims.sim_options.runs} sims",
+    )
+
+    mean = sum([k * v for k, v in pooled.items()])
+    mean_cb001 = summary.loc[summary.donor_id == "CB001", "number_mutations"].mean()
+    mean_cb002 = summary.loc[summary.donor_id == "CB002", "number_mutations"].mean()
+
+    ax.set_xlabel("number of SNVs", fontsize="xx-large")
+    ax.set_ylabel("density", fontsize="xx-large")
+    ax.tick_params(axis="both", which="major", labelsize=15)
+    ax.legend(
+        [
+            f"CB002, mean={mean_cb002:.2f}",
+            f"CB001, mean={mean_cb001:.2f}",
+            f"sims, mean={mean:.2f}",
+        ],
+        prop={"size": 12},
+        fancybox=False,
+    )
+
+    if options_plot.save:
+        plt.savefig(f"burden_year0{options_plot.extension}")
+
     plt.show()

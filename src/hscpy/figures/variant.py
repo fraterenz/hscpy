@@ -4,8 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 from hscpy import variant
-
-from hscpy.figures.options import SimulationOptions, PlotOptions
+from hscpy.figures import PlotOptions
+from hscpy.figures.simulations import SimulationOptions
 
 
 def show_variant_plots(

@@ -1,6 +1,6 @@
 from functools import reduce
 from typing import Dict, NewType, Tuple
-from hscpy import Measurement, dir_path_over_timepoint
+from hscpy import Measurement, dir_path_over_timepoint, load_measurement
 import numpy as np
 import json
 import sys
@@ -8,44 +8,22 @@ from pathlib import Path
 from futils import snapshot
 
 
-def load(file: Path) -> snapshot.Histogram:
-    with open(file, "r") as f:
-        return snapshot.Histogram({int(x): int(y) for x, y in json.load(f).items()})
-
-
 def load_burden(
-    path2dir: Path, runs: int, cells: int, timepoint: int = 1
+    path2save: Path, runs: int, cells: int, timepoint: int = 1
 ) -> Dict[str, snapshot.Histogram]:
-    """load all burden for a specific timepoint, by default load the burden of the
-    last timepoint.
+    return load_measurement(
+        path2save, runs, cells, measurement=Measurement.BURDEN, timepoint=timepoint
+    )
 
-    Remember that rust saves timepoints in decreasing order, hence the last
-    timepoint is 1.
-    """
-    burden = dict()
-    try:
-        timepoint_path = dir_path_over_timepoint(
-            measurement=Measurement.BURDEN,
-            cells=cells,
-            path2dir=path2dir,
-            timepoint=timepoint,
-        )
-    except AssertionError as e:
-        e.add_note(f"cannot load burden from {path2dir} for timepoint {timepoint}: {e}")
-        raise e
-    i = 0
-    for i, file in enumerate(timepoint_path.iterdir(), 1):
-        try:
-            burden[file.stem] = load(file)
-        except json.JSONDecodeError as e:
-            print(f"Error in opening {file} {e}")
-            sys.exit(1)
 
-    assert i == runs, f"wrong number of runs found: should be {runs} found {i}"
-    assert (
-        len(burden) == runs
-    ), f"wrong number of runs loaded: should be {runs} found {len(burden)}"
-    return burden
+def load_burden_timepoints(
+    path2save: Path, nb_timepoints: int, cells: int, runs: int
+) -> Dict[int, Dict[str, snapshot.Histogram]]:
+    my_burden = dict()
+
+    for i in range(1, nb_timepoints + 1):
+        my_burden[i] = load_burden(path2save, runs=runs, cells=cells, timepoint=i)
+    return my_burden
 
 
 def compute_mean_variance(
