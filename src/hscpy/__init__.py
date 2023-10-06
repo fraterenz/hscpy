@@ -65,11 +65,6 @@ def dir_path_over_timepoint(
     return paths[0]
 
 
-def load(file: Path) -> snapshot.Histogram:
-    with open(file, "r") as f:
-        return snapshot.Histogram({int(x): int(y) for x, y in json.load(f).items()})
-
-
 def load_measurement(
     path2dir: Path, runs: int, cells: int, measurement: Measurement, timepoint: int = 1
 ) -> Dict[str, snapshot.Histogram]:
@@ -93,7 +88,7 @@ def load_measurement(
     i = 0
     for i, file in enumerate(timepoint_path.iterdir(), 1):
         try:
-            burden[file.stem] = load(file)
+            burden[file.stem] = snapshot.histogram_from_file(file)
         except json.JSONDecodeError as e:
             print(f"Error in opening {file} {e}")
             sys.exit(1)
