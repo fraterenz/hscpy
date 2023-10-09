@@ -9,6 +9,25 @@ from futils import snapshot
 from hscpy import Measurement, burden, load_measurement
 
 
+def process_sfs(
+    my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
+) -> snapshot.Histogram:
+    """This modifies the sfs by removing the entry at 0.
+
+    Normalise means normalise the y axis by dividing all entries by the maximal
+    value found on the yaxis.
+    """
+    my_sfs.pop(0, 0)
+    jmuts = list(my_sfs.values())
+    if normalise:
+        max_ = max(jmuts)
+        jmuts = [ele / max_ for ele in jmuts]
+    jcells = [np.log(k) for k in my_sfs.keys()]
+    if log_transform:
+        jmuts = [np.log(val) for val in jmuts]
+    return snapshot.Histogram({k: val for k, val in zip(jcells, jmuts)})
+
+
 def load_sfs(
     path2save: Path, runs: int, cells: int, timepoint: int = 1
 ) -> Dict[str, snapshot.Histogram]:
