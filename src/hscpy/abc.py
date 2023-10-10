@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from typing import Dict
 from matplotlib import colors
 from scipy import stats
@@ -43,3 +44,39 @@ def heatmap_wasserstein(
     my_stats.rename_axis(f"run id: {id1}", axis=0, inplace=True)
     my_stats.rename_axis(f"run id: {id2}", axis=1, inplace=True)
     return my_stats
+
+
+class Parameters:
+    def __init__(
+        self, cells: int, b0: float, u: float, mean: float, std: float, idx: int
+    ):
+        self.cells = cells
+        self.b0 = b0
+        self.u = u
+        self.mean = mean
+        self.std = std
+        self.id = idx
+        self.s = 2 * cells * u
+
+
+def parse_filename_into_parameters(filename: Path):
+    import re
+
+    match_nb = re.compile(r"(\d+\.?\d*)([a-z]+)", re.IGNORECASE)
+    filename_str = filename.stem
+    filename_str = filename_str.replace("dot", ".").split("_")
+    my_dict = dict()
+    for ele in filename_str:
+        matched = match_nb.search(ele)
+        if matched:
+            my_dict[matched.group(2)] = float(matched.group(1))
+        else:
+            raise ValueError(f"could not parse the filename into parameters {filename}")
+    return Parameters(
+        my_dict["cells"],
+        my_dict["b"],
+        my_dict["u"],
+        my_dict["mean"],
+        my_dict["std"],
+        my_dict["id"],
+    )
