@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 from matplotlib import colors
 from scipy import stats
 from futils import snapshot
@@ -58,8 +58,11 @@ class Parameters:
         self.id = idx
         self.s = 2 * cells * u
 
+    def into_dict(self) -> Dict[str, Any]:
+        return self.__dict__
 
-def parse_filename_into_parameters(filename: Path):
+
+def parse_filename_into_parameters(filename: Path) -> Parameters:
     import re
 
     match_nb = re.compile(r"(\d+\.?\d*)([a-z]+)", re.IGNORECASE)

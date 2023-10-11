@@ -1,5 +1,6 @@
 """Load patient's data"""
 import pandas as pd
+from futils import snapshot
 from pathlib import Path
 from typing import NewType, Tuple
 
@@ -45,3 +46,29 @@ def load_and_process_mitchell(path2sims: Path) -> Mitchell:
         how="left",
     )
     return Mitchell(summary)
+
+
+def sfs_donor_mitchell(
+    name: str, path2mitchell: Path, remove_indels: bool
+) -> snapshot.Histogram:
+    if remove_indels:
+        filtered_matrix = filter_mutations(
+            *load_patient(
+                name,
+                path2mitchell / f"mutMatrix{name}.csv",
+                path2mitchell / f"mutType{name}.csv",
+            )
+        )
+
+    else:
+        filtered_matrix = load_patient(
+            name,
+            path2mitchell / f"mutMatrix{name}.csv",
+            path2mitchell / f"mutType{name}.csv",
+        )[0]
+
+    sfs_donor = filtered_matrix.sum(axis=1).value_counts()
+    sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
+    x_sfs = sfs_donor.index.to_numpy(dtype=int)
+    my_sfs = snapshot.Histogram({x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())})
+    return my_sfs

@@ -78,25 +78,7 @@ def plot_sfs_patient(
     options: PlotOptions,
     **kwargs,
 ):
-    if remove_indels:
-        filtered_matrix = mitchell.filter_mutations(
-            *mitchell.load_patient(
-                donor.name,
-                path2mitchell / f"mutMatrix{donor.name}.csv",
-                path2mitchell / f"mutType{donor.name}.csv",
-            )
-        )
-    else:
-        filtered_matrix = mitchell.load_patient(
-            donor.name,
-            path2mitchell / f"mutMatrix{donor.name}.csv",
-            path2mitchell / f"mutType{donor.name}.csv",
-        )[0]
-
-    sfs_donor = filtered_matrix.sum(axis=1).value_counts()
-    sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
-    x_sfs = sfs_donor.index.to_numpy(dtype=int)
-    my_sfs = snapshot.Histogram({x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())})
+    my_sfs = mitchell.sfs_donor_mitchell(donor.name, path2mitchell, remove_indels)
     return plot_sfs(ax, my_sfs, normalise, options, **kwargs)
 
 
