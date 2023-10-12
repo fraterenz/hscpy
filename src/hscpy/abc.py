@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 from matplotlib import colors
 from scipy import stats
 from futils import snapshot
@@ -48,15 +48,22 @@ def heatmap_wasserstein(
 
 class Parameters:
     def __init__(
-        self, cells: int, b0: float, u: float, mean: float, std: float, idx: int
+        self,
+        cells: int,
+        b: float,
+        mu: int,
+        u: float,
+        mean: float,
+        std: float,
+        idx: int,
     ):
         self.cells = cells
-        self.b0 = b0
+        self.b0 = b
+        self.mu = int(mu)
         self.u = u
-        self.mean = mean
+        self.s = mean
         self.std = std
-        self.id = idx
-        self.s = 2 * cells * u
+        self.idx = int(idx)
 
     def into_dict(self) -> Dict[str, Any]:
         return self.__dict__
@@ -75,11 +82,12 @@ def parse_filename_into_parameters(filename: Path) -> Parameters:
             my_dict[matched.group(2)] = float(matched.group(1))
         else:
             raise ValueError(f"could not parse the filename into parameters {filename}")
-    return Parameters(
-        my_dict["cells"],
-        my_dict["b"],
-        my_dict["u"],
-        my_dict["mean"],
-        my_dict["std"],
-        my_dict["id"],
-    )
+    return Parameters(**my_dict)
+
+
+def params_into_dataframe(params: List[Parameters]) -> pd.DataFrame:
+    df = pd.DataFrame.from_records([param.into_dict() for param in params])
+    df.idx = df.idx.astype(int)
+    df.cells = df.cells.astype(int)
+    df.mu = df.mu.astype(int)
+    return df
