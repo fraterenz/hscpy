@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from matplotlib import colors
+import matplotlib.pyplot as plt
 from scipy import stats
 from futils import snapshot
 
@@ -91,3 +92,111 @@ def params_into_dataframe(params: List[Parameters]) -> pd.DataFrame:
     df.cells = df.cells.astype(int)
     df.mu = df.mu.astype(int)
     return df
+
+
+def get_values_weights_from_sfs(
+    sfs_: snapshot.Histogram,
+) -> Tuple[List[int], List[int]]:
+    sfs_processed = process_sfs(sfs_, normalise=False, log_transform=True)
+    return list(sfs_processed.keys()), list(sfs_processed.values())
+
+
+def sfs_summary_statistic_wasserstein(
+    sims: Dict[int, Dict[str, snapshot.Histogram]],
+    target: Dict[int, snapshot.Histogram],
+    target_name: str,
+):
+    """
+    Return a list of records (list of dict) with the summary statistics and
+    other quantities such as the parameters used.
+
+    We compute the cumulative distribution function (cdf) for all the SFS from
+    the simulations `sims` and compare that against the cdf of simulations' SFS
+    `sims`.
+
+    `target` and `sims` must have the same keys, keys being the timepoint considered.
+
+    """
+    abc_results = []
+
+    for timepoint_sim, sfs_sim in sims.items():
+        v_values, v_weights = get_values_weights_from_sfs(target[timepoint_sim])
+        params = sfs_summary_statistic_wasserstein_timepoint(
+            sfs_sim, v_values, v_weights, target_name, timepoint_sim
+        )
+
+        abc_results.extend(params)
+
+    return pd.DataFrame.from_records(abc_results)
+
+
+def sfs_summary_statistic_wasserstein_timepoint(
+    sims: Dict[str, snapshot.Histogram],
+    v_values: List[int],
+    v_weights: List[int],
+    target_name: str,
+    timepoint: int,
+):
+    """
+    Return a list of records (list of dict) with the summary statistics and
+    other quantities such as the parameters used.
+
+    We compute the SFS from the simulations `sims` and compare that against the
+    `v_values`, `v_weights` which are computed from the SFS of the target data.
+
+    """
+
+    all_params = []
+
+    for i, (filename, my_sfs) in enumerate(sims.items()):
+        u_values, u_weights = get_values_weights_from_sfs(my_sfs)
+        params = parse_filename_into_parameters(Path(filename)).into_dict()
+        # compute the summary statistic
+        params["wasserstein"] = stats.wasserstein_distance(
+            u_values, v_values, u_weights, v_weights
+        )
+        params["donor_name"] = target_name
+        params["timepoint"] = timepoint
+        params["filename"] = filename
+        all_params.append(params)
+
+    return all_params
+
+
+def run_abc(
+    summary: pd.DataFrame, quantile: float, minimum_timepoints: int
+) -> List[int]:
+    runs2keep = []
+
+    proportions_accepted_per_timepoint = {t: 0 for t in summary.timepoint.unique()}
+
+    for idx in summary.idx.unique():
+        tmp = summary.loc[
+            (summary.idx == idx)
+            & (summary.wasserstein < summary.wasserstein.quantile(quantile))
+        ]
+
+        for t in tmp.timepoint.tolist():
+            proportions_accepted_per_timepoint[t] += 1
+
+        if tmp.shape[0] >= minimum_timepoints:
+            runs2keep.append(idx)
+
+    print(f"found {len(runs2keep)} runs")
+
+    tot_runs, tot_timepoints = (
+        summary.idx.unique().shape[0],
+        summary.timepoint.unique().shape[0],
+    )
+
+    fig, ax = plt.subplots(1, 1)
+    ax.plot(
+        np.linspace(0, 100, tot_timepoints),
+        [ele / tot_runs for ele in proportions_accepted_per_timepoint.values()][::-1],
+    )
+    ax.set_xlabel("years", fontsize="xx-large")
+    ax.set_ylabel(f"proportion of accepted runs (tot: {tot_runs})", fontsize="xx-large")
+    ax.tick_params(axis="both", which="both", labelsize=14)
+    plt.show()
+
+    return runs2keep
