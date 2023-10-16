@@ -163,41 +163,31 @@ def sfs_summary_statistic_wasserstein_timepoint(
     return all_params
 
 
-def run_abc(
-    summary: pd.DataFrame, quantile: float, minimum_timepoints: int, max_years: int, min_years: int = 0
-) -> List[int]:
-    runs2keep = []
-
-    proportions_accepted_per_timepoint = {t: 0 for t in summary.timepoint.unique()}
-
-    for idx in summary.idx.unique():
-        tmp = summary.loc[
-            (summary.idx == idx)
-            & (summary.wasserstein < summary.wasserstein.quantile(quantile))
+def filter_per_timepoint(
+    summary: pd.DataFrame, quantile: float, verbose: bool
+) -> pd.DataFrame:
+    accepted = []
+    for t in summary.timepoint.unique():
+        df = summary.loc[summary.timepoint == t, ["wasserstein", "idx", "timepoint"]]
+        kept = df.loc[
+            df.wasserstein < df.wasserstein.quantile(quantile), ["idx", "timepoint"]
         ]
+        accepted.append(kept)
+        if verbose:
+            print(f"{len(kept)} runs accepted for timepoint {t}")
+    return pd.concat(accepted)
 
-        for t in tmp.timepoint.tolist():
-            proportions_accepted_per_timepoint[t] += 1
 
-        if tmp.shape[0] >= minimum_timepoints:
-            runs2keep.append(idx)
-
-    print(f"found {len(runs2keep)} runs")
-
-    tot_runs, tot_timepoints = (
-        summary.idx.unique().shape[0],
-        summary.timepoint.unique().shape[0],
-    )
-
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(
-        np.linspace(min_years, max_years, tot_timepoints),
-        [ele / tot_runs for ele in proportions_accepted_per_timepoint.values()][::-1],
-    )
-    ax.set_xlabel("years", fontsize="xx-large")
-    ax.set_ylabel(f"proportion of accepted runs (tot: {tot_runs})", fontsize="xx-large")
-    ax.tick_params(axis="both", which="both", labelsize=14)
-    plt.show()
-
-    return runs2keep
-
+def run_abc(
+    summary: pd.DataFrame,
+    quantile: float,
+    minimum_timepoints: int,
+    verbose: bool = False,
+):
+    accepted = filter_per_timepoint(summary, quantile, verbose)
+    # keep only the runs that have at least `minimum_timepoints` good runs
+    runs2keep = (accepted.groupby("idx").count() >= minimum_timepoints).reset_index()
+    runs2keep = [
+        int(ele) for ele in runs2keep.where(runs2keep.timepoint).dropna().idx.tolist()
+    ]
+    return runs2keep, accepted
