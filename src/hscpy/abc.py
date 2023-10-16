@@ -164,7 +164,7 @@ def sfs_summary_statistic_wasserstein_timepoint(
 
 
 def run_abc(
-    summary: pd.DataFrame, quantile: float, minimum_timepoints: int
+    summary: pd.DataFrame, quantile: float, minimum_timepoints: int, max_years: int, min_years: int = 0
 ) -> List[int]:
     runs2keep = []
 
@@ -191,7 +191,7 @@ def run_abc(
 
     fig, ax = plt.subplots(1, 1)
     ax.plot(
-        np.linspace(0, 100, tot_timepoints),
+        np.linspace(min_years, max_years, tot_timepoints),
         [ele / tot_runs for ele in proportions_accepted_per_timepoint.values()][::-1],
     )
     ax.set_xlabel("years", fontsize="xx-large")
@@ -200,3 +200,4 @@ def run_abc(
     plt.show()
 
     return runs2keep
+
