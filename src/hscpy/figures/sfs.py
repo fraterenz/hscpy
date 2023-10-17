@@ -59,11 +59,11 @@ def plot_sfs_sim_with_id(
 def plot_sfs_correction(
     ax,
     correction: sfs.CorrectedVariants,
-    cells: int,
     normalise: bool,
     options: PlotOptions,
     **kwargs,
 ):
+    cells = correction.corrected_variants.shape[0]
     x = correction.frequencies[:cells]
     f_sampled = correction.corrected_variants
     my_sfs = snapshot.Histogram({xx: f for xx, f in zip(x, f_sampled)})

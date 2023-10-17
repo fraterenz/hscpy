@@ -10,14 +10,23 @@ class Parameters:
         path: Path,
         sample: int,
         cells: int,
-        b: float,
+        b0: float,
         mu: int,
         u: float,
-        mean: float,
+        s: float,
         std: float,
         idx: int,
     ):
         self.sample = sample
+        self.path = path
+        self.sample = sample
+        self.cells = cells
+        self.b0 = b0
+        self.mu = mu
+        self.u = u
+        self.s = s
+        self.std = std
+        self.idx = idx
 
     def into_dict(self) -> Dict[str, Any]:
         return self.__dict__
@@ -27,7 +36,6 @@ class ParametersFile:
     def __init__(
         self,
         cells: int,
-        sample: int,
         b: float,
         mu: int,
         u: float,
@@ -57,11 +65,11 @@ def parameters_from_path(path: Path) -> Parameters:
             sample = int(matched.group(1))
     assert sample > 0, f"cannot find a value for sample from {path}"
 
-    params_file = parameters_from_path(path)
+    params_file = parse_filename_into_parameters(path)
     return Parameters(path, sample, **params_file.__dict__)
 
 
-def parse_filename_into_parameters(filename: Path) -> Parameters:
+def parse_filename_into_parameters(filename: Path) -> ParametersFile:
     match_nb = re.compile(r"(\d+\.?\d*)([a-z]+)", re.IGNORECASE)
     filename_str = filename.stem
     filename_str = filename_str.replace("dot", ".").split("_")
@@ -73,7 +81,7 @@ def parse_filename_into_parameters(filename: Path) -> Parameters:
             my_dict[matched.group(2)] = float(matched.group(1))
         else:
             raise ValueError(f"could not parse the filename into parameters {filename}")
-    return Parameters(**my_dict)
+    return ParametersFile(**my_dict)
 
 
 def params_into_dataframe(params: List[Parameters]) -> pd.DataFrame:
