@@ -24,7 +24,7 @@ def filter_mutations(m_matrix: pd.DataFrame, m_type: pd.DataFrame) -> pd.DataFra
     return m_matrix.iloc[m_type[m_type == "SNV"].dropna().index, :]
 
 
-def load_and_process_mitchell(path2sims: Path) -> Mitchell:
+def load_and_process_mitchell(path2sims: Path, drop_donor_KX007: bool) -> Mitchell:
     assert (
         path2sims.name == "Summary_cut.csv"
     ), f"wrong arg `path2sims` {path2sims}, should be the path to the file `Summary_cut.csv`"
@@ -33,6 +33,8 @@ def load_and_process_mitchell(path2sims: Path) -> Mitchell:
     summary.sample_type = summary.sample_type.astype("category")
     summary.sort_values(by="age", inplace=True)
     summary.reset_index(inplace=True)
+    # drop this donor because they have updated it twice
+    summary.drop(index=summary[summary.donor_id == "KX007"].index, inplace=True)
 
     # neglect some duplicated colonies e.g. summary.colony_ID == "11_E07"
     summary = summary.merge(

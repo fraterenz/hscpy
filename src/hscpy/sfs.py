@@ -1,19 +1,24 @@
-from dataclasses import dataclass
 import numpy as np
 from scipy import stats
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Dict
+from dataclasses import dataclass
 from futils import snapshot
+from hscpy.parameters import parameters_from_path
+from hscpy import load_histogram
 
-from hscpy import Measurement, burden, load_measurement
+
+class RealisationSfs:
+    def __init__(self, path: Path) -> None:
+        assert path.is_file(), f"cannot find SFS file {path}"
+        self.parameters = parameters_from_path(path)
+        self.sfs = load_histogram(path)
 
 
 def process_sfs(
     my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
 ) -> snapshot.Histogram:
     """This modifies the sfs by removing the entry at 0.
-
     Normalise means normalise the y axis by dividing all entries by the maximal
     value found on the yaxis.
     """
@@ -28,26 +33,9 @@ def process_sfs(
     return snapshot.Histogram({k: val for k, val in zip(jcells, jmuts)})
 
 
-def load_sfs(
-    path2save: Path, runs: int, cells: int, timepoint: int = 1
-) -> Dict[str, snapshot.Histogram]:
-    return load_measurement(
-        path2save, runs, cells, measurement=Measurement.SFS, timepoint=timepoint
-    )
-
-
-def load_sfs_timepoints(
-    path2save: Path, nb_timepoints: int, cells: int, runs: int
-) -> Dict[int, Dict[str, snapshot.Histogram]]:
-    my_sfs = dict()
-
-    for i in range(1, nb_timepoints + 1):
-        my_sfs[i] = load_sfs(path2save, runs, cells, timepoint=i)
-    return my_sfs
-
-
 class Correction(StrEnum):
     ONE_OVER_F = auto()
+
     ONE_OVER_F_SQUARED = auto()
 
 

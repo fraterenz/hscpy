@@ -1,29 +1,17 @@
-from functools import reduce
-from typing import Dict, NewType, Tuple
-from hscpy import Measurement, dir_path_over_timepoint, load_measurement
+from typing import List, Tuple
+from hscpy import load_histogram
 import numpy as np
-import json
-import sys
 from pathlib import Path
 from futils import snapshot
 
-
-def load_burden(
-    path2save: Path, runs: int, cells: int, timepoint: int = 1
-) -> Dict[str, snapshot.Histogram]:
-    return load_measurement(
-        path2save, runs, cells, measurement=Measurement.BURDEN, timepoint=timepoint
-    )
+from hscpy.parameters import parameters_from_path
 
 
-def load_burden_timepoints(
-    path2save: Path, nb_timepoints: int, cells: int, runs: int
-) -> Dict[int, Dict[str, snapshot.Histogram]]:
-    my_burden = dict()
-
-    for i in range(1, nb_timepoints + 1):
-        my_burden[i] = load_burden(path2save, runs=runs, cells=cells, timepoint=i)
-    return my_burden
+class RealisationBurden:
+    def __init__(self, path: Path) -> None:
+        assert path.is_file(), f"cannot find burden file {path}"
+        self.parameters = parameters_from_path(path)
+        self.burden = load_histogram(path)
 
 
 def compute_mean_variance(
@@ -58,14 +46,10 @@ def plot_burden(burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs
     return ax
 
 
-def average_burden(burden_dict: Dict[int, snapshot.Histogram]):
-    # TODO
-    # raise NotImplementedError(
-    #    "I think we should pool all the simulations together and then average them, not average them directly"
-    # )
+def average_burden(burdens: List[snapshot.Histogram]):
     # add zeros for values which are not present in all SFS
     burden_uniformised = snapshot.Uniformise.uniformise_histograms(
-        [snapshot.Histogram(burden) for burden in burden_dict.values()]
+        [snapshot.Histogram(burden) for burden in burdens]
     )
     jcells = burden_uniformised.create_x_array()
     # take the Nj mutations for all simulations
@@ -84,6 +68,6 @@ def single_cell_mutations_from_burden(burden: snapshot.Histogram) -> np.ndarray:
     return np.array(muts, dtype=int)
 
 
-def pooled_burden(burden_: Dict[str, snapshot.Histogram]) -> snapshot.Distribution:
-    histograms = [b for b in burden_.values()]
+def pooled_burden(burdens: List[snapshot.Histogram]) -> snapshot.Distribution:
+    histograms = [b for b in burdens]
     return snapshot.Uniformise.pooled_distribution(histograms)

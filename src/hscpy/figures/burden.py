@@ -1,25 +1,23 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 from futils import snapshot
 from matplotlib.ticker import MultipleLocator
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
+from hscpy.burden import RealisationBurden
 
-from hscpy import Measurement, burden
-from hscpy.figures import PlotOptions
-from hscpy.figures.simulations import Simulations
+from hscpy.figures import AgeSims, Donor, PlotOptions
 
 
 def plot_simulations_burden(
-    sims: Simulations, options_plot: PlotOptions, summary: pd.DataFrame
+    donors: List[Donor],
+    burdens: Dict[AgeSims, List[RealisationBurden]],
+    options_plot: PlotOptions,
 ):
-    age_simulations = np.linspace(
-        0, sims.sim_options.last_timepoint_years, sims.sim_options.nb_timepoints
-    )[::-1]
-
     fig, ax = plt.subplots(1, 1, figsize=options_plot.figsize)
+    raise NotImplementedError
 
     ax.plot(
         summary["age"],

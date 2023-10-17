@@ -1,22 +1,23 @@
 import random
 import matplotlib.pyplot as plt
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from futils import snapshot
+from hscpy import burden
+from hscpy import sfs
 
-from hscpy import Donor, Measurement, burden, load_measurement, sfs
-from hscpy.figures import PlotOptions, mitchell
-from hscpy.figures.simulations import Simulations
+from hscpy.figures import AgeSims, Donor, PlotOptions
 
 
 def plot_sfs_avg(
     ax,
-    my_sfs: Dict[str, snapshot.Histogram],
-    age: int,
-    options: PlotOptions,
+    donors: List[Donor],
+    burdens: Dict[AgeSims, List[sfs.RealisationSfs]],
+    options_plot: PlotOptions,
     **kwargs,
 ):
+    raise NotImplementedError
     pooled = burden.pooled_burden(my_sfs)
     ax = plot_sfs(ax, pooled, normalise=True, options=options, **kwargs)
     return ax
@@ -78,18 +79,20 @@ def plot_sfs_patient(
     options: PlotOptions,
     **kwargs,
 ):
+    raise NotImplementedError
     my_sfs = mitchell.sfs_donor_mitchell(donor.name, path2mitchell, remove_indels)
     return plot_sfs(ax, my_sfs, normalise, options, **kwargs)
 
 
 def plot_simulations_donors_sfs(
-    sims: Simulations,
+    donors: List[Donor],
+    burdens: Dict[AgeSims, List[sfs.RealisationSfs]],
     options_plot: PlotOptions,
-    paths2patients: Path,
     normalise: bool,
     corrected_variants: Dict[str, sfs.CorrectedVariants],
     id2show: str | None = None,
 ):
+    raise NotImplementedError
     idx2show = (
         id2show if id2show else random.sample(list(sims.my_sfs[3].keys()), k=1)[0]
     )
