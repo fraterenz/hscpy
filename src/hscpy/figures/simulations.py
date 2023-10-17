@@ -25,17 +25,31 @@ class SimulationOptions:
 def donors_from_mitchell(
     mitchell_data: pd.DataFrame,
     sim_options: SimulationOptions,
+    ages: None | List[float] = None,
     verbosity: bool = False,
 ) -> List[Donor]:
     donors = list()
-    for row in mitchell_data[["donor_id", "age", "cells"]].drop_duplicates().iterrows():
+    if ages:
+        idx = list(range(1, len(ages) + 1))[::-1]
+        assert len(idx) == len(ages)
+    for row in (
+        mitchell_data[["donor_id", "age", "cells"]]
+        .drop_duplicates()
+        .sort_values(by="age")
+        .iterrows()
+    ):
         donor_id, age, cells = row[1].donor_id, row[1].age, row[1].cells
-        idx_timepoint, closest_age = get_idx_timepoint_from_age(
-            age=age,
-            years=sim_options.last_timepoint_years,
-            nb_timepoints=sim_options.nb_timepoints,
-            verbosity=verbosity,
-        )
+        if ages:
+            i = idx.pop()
+            assert age == ages[i]
+            idx_timepoint, closest_age = i, age
+        else:
+            idx_timepoint, closest_age = get_idx_timepoint_from_age(
+                age=age,
+                years=sim_options.last_timepoint_years,
+                nb_timepoints=sim_options.nb_timepoints,
+                verbosity=verbosity,
+            )
         if verbosity:
             print(
                 f"\ncreating donor {donor_id} with age {age} and closest age {closest_age} using {sim_options.nb_subclones} timepoints and year {sim_options.last_timepoint_years}"
