@@ -11,7 +11,7 @@ class Parameters:
         sample: int,
         cells: int,
         b0: float,
-        mu: int,
+        mu: float,
         u: float,
         s: float,
         std: float,
@@ -37,19 +37,22 @@ class ParametersFile:
         self,
         cells: int,
         b: float,
-        mu: int,
+        mu: float,
         u: float,
         mean: float,
         std: float,
         idx: int,
     ):
-        self.cells = cells
+        self.cells = int(cells)
         self.b0 = b
-        self.mu = int(mu)
+        self.mu = mu
         self.u = u
         self.s = mean
         self.std = std
         self.idx = int(idx)
+
+    def into_dict(self) -> Dict[str, Any]:
+        return self.__dict__
 
 
 def parameters_from_path(path: Path) -> Parameters:
