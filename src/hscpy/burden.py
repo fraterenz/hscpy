@@ -69,5 +69,4 @@ def single_cell_mutations_from_burden(burden: snapshot.Histogram) -> np.ndarray:
 
 
 def pooled_burden(burdens: List[snapshot.Histogram]) -> snapshot.Distribution:
-    histograms = [b for b in burdens]
-    return snapshot.Uniformise.pooled_distribution(histograms)
+    return snapshot.Uniformise.pooled_distribution(burdens)
