@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, List
 
 from futils import snapshot
-from hscpy import burden
 from hscpy import sfs
 
 from hscpy.figures import AgeSims, Donor, PlotOptions
@@ -12,13 +11,11 @@ from hscpy.figures import AgeSims, Donor, PlotOptions
 
 def plot_sfs_avg(
     ax,
-    donors: List[Donor],
-    burdens: Dict[AgeSims, List[sfs.RealisationSfs]],
+    my_sfs: List[snapshot.Histogram],
     options_plot: PlotOptions,
     **kwargs,
 ):
-    raise NotImplementedError
-    pooled = burden.pooled_burden(my_sfs)
+    pooled = snapshot.Uniformise.pooled_distribution(my_sfs)
     ax = plot_sfs(ax, pooled, normalise=True, options=options, **kwargs)
     return ax
 
