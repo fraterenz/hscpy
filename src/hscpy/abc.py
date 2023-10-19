@@ -88,16 +88,49 @@ def filter_per_timepoint(
     return pd.concat(accepted)
 
 
+class AbcResults:
+    def __init__(
+        self,
+        accepted: pd.DataFrame,
+        accepted_quantile: pd.DataFrame,
+        quantile: float,
+        minimum_timepoints: int,
+    ) -> None:
+        """The DataFrames with two columns:
+        - the id of the accepted runs
+        - the timepoint (age) at which the run has been accepted
+
+        To get a unique list of idx independently of the timepoints, run `get_idx`.
+
+        `accepted_quantile`: are all the runs that meet the quantile threshold
+        `accepted`: are all the runs that meet both the quantile and the
+        timepoint threshold
+        """
+        assert quantile <= 1, f"found quantile greater than 1: {quantile}"
+        assert accepted_quantile.shape[0] >= accepted.shape[0]
+        # all the runs that meet the quantile threshold
+        self.accepted_quantile = accepted_quantile
+        # all the runs that meet both the quantile and the timepoint threshold
+        self.accepted = accepted
+        self.quantile = quantile
+        self.minimum_timepoints = minimum_timepoints
+
+    def get_idx(self) -> List[int]:
+        return list(self.accepted.idx.unique())
+
+
 def run_abc(
     summary: pd.DataFrame,
     quantile: float,
     minimum_timepoints: int,
     verbose: bool = False,
-):
+) -> AbcResults:
     accepted = filter_per_timepoint(summary, quantile, verbose)
     # keep only the runs that have at least `minimum_timepoints` good runs
     runs2keep = (accepted.groupby("idx").count() >= minimum_timepoints).reset_index()
     runs2keep = [
         int(ele) for ele in runs2keep.where(runs2keep.timepoint).dropna().idx.tolist()
     ]
-    return runs2keep, accepted
+    return AbcResults(
+        accepted[accepted.idx.isin(runs2keep)], accepted, quantile, minimum_timepoints
+    )
