@@ -16,7 +16,7 @@ def plot_sfs_avg(
     **kwargs,
 ):
     pooled = snapshot.Uniformise.pooled_distribution(my_sfs)
-    ax = plot_sfs(ax, pooled, normalise=True, options=options, **kwargs)
+    ax = plot_sfs(ax, pooled, normalise=True, options=options_plot, **kwargs)
     return ax
 
 
