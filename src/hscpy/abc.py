@@ -14,7 +14,9 @@ def get_values_weights_from_sfs(
     sfs_: snapshot.Histogram,
 ) -> Tuple[List[int], List[int]]:
     sfs_sorted = dict(sorted(sfs_.items()))
-    sfs_processed = process_sfs(sfs_sorted, normalise=False, log_transform=True)
+    sfs_processed = process_sfs(
+        snapshot.Histogram(sfs_sorted), normalise=False, log_transform=True
+    )
     return list(sfs_processed.keys()), list(sfs_processed.values())
 
 
@@ -22,7 +24,7 @@ def sfs_summary_statistic_wasserstein(
     sims: Dict[int | float, List[RealisationSfs]],
     target: Dict[int | float, snapshot.Histogram],
     target_name: str,
-):
+) -> pd.DataFrame:
     """
     Return a list of records (list of dict) with the summary statistics and
     other quantities such as the parameters used.
