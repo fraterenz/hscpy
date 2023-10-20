@@ -13,7 +13,8 @@ from hscpy.sfs import RealisationSfs, process_sfs
 def get_values_weights_from_sfs(
     sfs_: snapshot.Histogram,
 ) -> Tuple[List[int], List[int]]:
-    sfs_processed = process_sfs(sfs_, normalise=False, log_transform=True)
+    sfs_sorted = dict(sorted(sfs_.items()))
+    sfs_processed = process_sfs(sfs_sorted, normalise=False, log_transform=True)
     return list(sfs_processed.keys()), list(sfs_processed.values())
 
 
