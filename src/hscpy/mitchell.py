@@ -77,15 +77,14 @@ def sfs_donor_mitchell(
     return my_sfs
 
 
-def load_all_sfs_by_age(
-    path2dir: Path, ages: Set[float]
-) -> Dict[float, List[sfs.RealisationSfs]]:
+def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[sfs.RealisationSfs]]:
     assert path2dir.is_dir()
-    sfs_sims = {k: list() for k in sorted(list(ages))}
+    sfs_sims = dict()
 
     for path in path2dir.iterdir():
         i = 0
         if path.is_dir():
+            sfs_sims[parse_path2folder_xdoty_years(p.parent)] = list()
             for i, p in enumerate(path.glob("*.json")):
                 sfs_sims[parse_path2folder_xdoty_years(p.parent)].append(
                     sfs.RealisationSfs(p)
