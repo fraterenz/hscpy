@@ -90,7 +90,7 @@ def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[sfs.RealisationSfs]]
                     sfs.RealisationSfs(p)
                 )
 
-            print(f"loaded {i} files from {path}")
+            print(f"loaded {i + 1} files from {path}")
 
     return sfs_sims
 
