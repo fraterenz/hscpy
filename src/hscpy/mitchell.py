@@ -84,7 +84,7 @@ def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[sfs.RealisationSfs]]
     for path in path2dir.iterdir():
         i = 0
         if path.is_dir():
-            sfs_sims[parse_path2folder_xdoty_years(p.parent)] = list()
+            sfs_sims[parse_path2folder_xdoty_years(path)] = list()
             for i, p in enumerate(path.glob("*.json")):
                 sfs_sims[parse_path2folder_xdoty_years(p.parent)].append(
                     sfs.RealisationSfs(p)
