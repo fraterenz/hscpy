@@ -1,3 +1,4 @@
+from typing import Dict, List
 import numpy as np
 from scipy import stats
 from enum import StrEnum, auto
@@ -5,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from futils import snapshot
 from hscpy.parameters import parameters_from_path
-from hscpy import load_histogram
+from hscpy import load_histogram, parse_path2folder_xdoty_years
 
 
 class RealisationSfs:
@@ -21,7 +22,7 @@ def process_sfs(
     """This modifies the sfs by removing the entry at 0 and log10 transform the
     jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
     `True`.
-    
+
     Normalise means normalise the y axis by dividing all entries by the maximal
     value found on the yaxis.
     """
@@ -92,3 +93,21 @@ def compute_variants(
         @ variants2correct
     )
     return CorrectedVariants(correction, corrected, variants2correct, frequencies)
+
+
+def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[RealisationSfs]]:
+    assert path2dir.is_dir()
+    sfs_sims = dict()
+
+    for path in path2dir.iterdir():
+        i = 0
+        if path.is_dir():
+            sfs_sims[parse_path2folder_xdoty_years(path)] = list()
+            for i, p in enumerate(path.glob("*.json")):
+                sfs_sims[parse_path2folder_xdoty_years(p.parent)].append(
+                    RealisationSfs(p)
+                )
+
+            print(f"loaded {i + 1} files from {path}")
+
+    return sfs_sims

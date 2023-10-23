@@ -1,35 +1,33 @@
+from typing import Dict, List
 import numpy as np
 from pathlib import Path
+from hscpy import load_variant, parse_path2folder_xdoty_years
+
+from hscpy.parameters import parameters_from_path
 
 
-def load_variant_fractions(
-    path2dir: Path, nb_timepoints: int, cells: int, runs: int, subclones: int
-):
-    assert path2dir.is_dir(), "must be dir"
-    path2variants = path2dir / f"{cells}cells" / "variant_fraction"
-    assert (
-        len([x for x in path2variants.iterdir() if x.is_dir()]) == nb_timepoints
-    ), "Wrong number of timepoints saved"
+class RealisationVariantFractions:
+    def __init__(self, path: Path) -> None:
+        assert path.is_file(), f"cannot find file {path}"
+        self.parameters = parameters_from_path(path)
+        self.variant_fractions = load_variant(path)
 
-    data = []
-    found = 0
-    for path2snapshot in sorted(
-        list(path2variants.iterdir()),
-        key=lambda path2name: int(path2name.name),
-        reverse=True,
-    ):  # need to reverse because rust saves from the last timepoint
-        found = 0
-        for file in path2snapshot.iterdir():
-            with open(file, "r") as f:
-                for i, ele in enumerate(f.read().split(",")):
-                    # remove wild type clone
-                    if i > 0 and ele:
-                        data.append(float(ele))
-            found += 1
-        assert (
-            found == runs
-        ), f"for timepoint {path2snapshot} found {found} runs instead of {runs}"
 
-    return np.array(data, dtype=float).reshape(
-        nb_timepoints, runs, subclones - 1
-    )  # timepoints x RUNS x MAX_SUBCLONES - 1 (rm wildtype)
+def load_all_var_frac_by_age(
+    path2dir: Path,
+) -> Dict[float, List[RealisationVariantFractions]]:
+    assert path2dir.is_dir()
+    var_frac_sims = dict()
+
+    for path in path2dir.iterdir():
+        i = 0
+        if path.is_dir():
+            var_frac_sims[parse_path2folder_xdoty_years(path)] = list()
+            for i, p in enumerate(path.glob("*.csv")):
+                var_frac_sims[parse_path2folder_xdoty_years(p.parent)].append(
+                    RealisationVariantFractions(p)
+                )
+
+            print(f"loaded {i + 1} files from {path}")
+
+    return var_frac_sims

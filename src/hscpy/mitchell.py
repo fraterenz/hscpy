@@ -75,27 +75,3 @@ def sfs_donor_mitchell(
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
     my_sfs = snapshot.Histogram({x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())})
     return my_sfs
-
-
-def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[sfs.RealisationSfs]]:
-    assert path2dir.is_dir()
-    sfs_sims = dict()
-
-    for path in path2dir.iterdir():
-        i = 0
-        if path.is_dir():
-            sfs_sims[parse_path2folder_xdoty_years(path)] = list()
-            for i, p in enumerate(path.glob("*.json")):
-                sfs_sims[parse_path2folder_xdoty_years(p.parent)].append(
-                    sfs.RealisationSfs(p)
-                )
-
-            print(f"loaded {i + 1} files from {path}")
-
-    return sfs_sims
-
-
-def parse_path2folder_xdoty_years(path2folder: Path) -> int:
-    """assume `path2folder` exists and is of the form: `/path/to/data/10dot5years`"""
-    assert path2folder.is_dir()
-    return int(round(float(path2folder.stem.replace("dot", ".").replace("years", ""))))
