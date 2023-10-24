@@ -21,7 +21,7 @@ def load_variant(path: Path) -> timeserie.Timeserie:
     )
 
 
-def parse_path2folder_xdoty_years(path2folder: Path) -> int:
+def parse_path2folder_xdoty_years(path2folder: Path) -> float:
     """assume `path2folder` exists and is of the form: `/path/to/data/10dot5years`"""
     assert path2folder.is_dir()
-    return int(round(float(path2folder.stem.replace("dot", ".").replace("years", ""))))
+    return round(float(path2folder.stem.replace("dot", ".").replace("years", "")), 1)
