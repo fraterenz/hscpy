@@ -63,7 +63,6 @@ def load_all_detected_var_counts_by_age(
     var_counts_sims = dict()
 
     for path in path2dir.iterdir():
-        i = 0
         if path.is_dir():
             var_counts_sims[parse_path2folder_xdoty_years(path)] = list()
             for i, p in enumerate(path.glob("*.csv")):
@@ -109,7 +108,6 @@ def load_all_var_frac_by_age(
     var_frac_sims = dict()
 
     for path in path2dir.iterdir():
-        i = 0
         if path.is_dir():
             var_frac_sims[parse_path2folder_xdoty_years(path)] = list()
             for i, p in enumerate(path.glob("*.csv")):
