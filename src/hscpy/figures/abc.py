@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from hscpy import abc
+
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
     min_, max_ = mask[col].min(), mask[col].max()
@@ -44,3 +46,70 @@ def plot_results(
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
 
     plt.show()
+
+
+def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
+    results = abc_summary.loc[
+        abc_summary.idx.isin(abc_results.get_idx()), ["mu", "s", "std"]
+    ].drop_duplicates()
+
+    priors = abc_summary[["mu", "u", "s", "std"]].drop_duplicates()
+
+    print(f"plotting {results.shape[0]} runs")
+    plot_results(
+        results,
+        ["mu", "s"],
+        [0, lims(priors, "mu")[1]],
+        [0, lims(priors, "s")[1]],
+        {"discrete": True},
+        {"binwidth": 0.01},
+    )
+
+    plot_results(
+        results,
+        ["mu", "std"],
+        [0, lims(priors, "mu")[1]],
+        [0, lims(priors, "std")[1]],
+        {"discrete": True},
+        {"binwidth": 0.005},
+    )
+
+    plot_results(
+        results,
+        ["s", "std"],
+        [0, lims(priors, "s")[1]],
+        [0, lims(priors, "std")[1]],
+        {"binwidth": 0.01},
+        {"binwidth": 0.005},
+    )
+
+    plt.show()
+
+
+def run_abc_filtering_on_clones(
+    df, runs2keep: int, single_timepoint: bool, nb_clones_diff: int, minimum_runs: int
+):
+    idx_abc = dict()
+
+    if single_timepoint:
+        for t in df.sort_values(by="timepoint").timepoint.unique():
+            print(f"{df.shape[0]} runs before filtering on nb of clones")
+            # first filter on clones
+            view = df[(df["clones diff"] <= nb_clones_diff) & (df.timepoint == t)]
+            nb_runs_after_clone_filtering = view.shape[0]
+            print(
+                f"{view.shape[0]} runs after filtering on nb of clones {view['clones'].unique()}"
+            )
+
+            # then take the quantile, s.t. the same number of runs for every
+            # timepoint are kept
+            quantile = runs2keep / (nb_runs_after_clone_filtering)
+            # run abc with wasserstein metric
+            idx_abc[t] = abc.run_abc(view, quantile, minimum_runs, verbose=True)
+            plot_posteriors(idx_abc[t], view)
+    else:
+        view = df[df["clones diff"] <= nb_clones_diff]
+        quantile = runs2keep / df.shape[0]
+        idx_abc = abc.run_abc(view, quantile, minimum_runs, verbose=True)
+        plot_posteriors(idx_abc, view)
+    return idx_abc
