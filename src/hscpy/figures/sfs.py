@@ -1,9 +1,10 @@
 import random
 import matplotlib.pyplot as plt
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from futils import snapshot
+from scipy import stats
 from hscpy import sfs
 
 from hscpy.figures import AgeSims, Donor, PlotOptions
@@ -151,3 +152,74 @@ def plot_simulations_donors_sfs(
                 transparent=True,
             )
         plt.show()
+
+
+def plot_sfs_cdf(
+    idx2show: Set[int],
+    target: snapshot.Histogram,
+    sfs_sims: List[sfs.RealisationSfs],
+    markers: List[str] = ["o", "<", "*"],
+    colors: List[str] = ["cyan", "black", "yellowgreen"],
+    alpha: float = 0.45,
+):
+    fig = plt.figure(layout="constrained", figsize=(7, 4))
+    subfigs = fig.subfigures(1, 2, wspace=-0.1, width_ratios=[2.4, 1])
+
+    axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
+    ax3 = subfigs[1].subplots(1, 1)
+
+    target = sfs.process_sfs(target, normalise=False, log_transform=True)
+    u_values, u_weights = list(target.keys()), list(target.values())
+
+    axes[0].plot(
+        list(target.keys()),
+        list(target.values()),
+        marker="x",
+        linestyle="",
+        color="purple",
+        label=f"Mitchell",
+        mew=2,
+    )
+
+    axes[1].plot(*snapshot.cdf_from_histogram(target), color="purple", label="Mitchell")
+
+    for s_id, marker, color in zip(idx2show, markers, colors):
+        run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
+        params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
+        print(f"run with params {params2plot}")
+
+        sim = sfs.process_sfs(run.sfs, normalise=False, log_transform=True)
+        v_values, v_weights = list(sim.keys()), list(sim.values())
+        wasserstein_scipy = stats.wasserstein_distance(
+            u_values, v_values, u_weights, v_weights
+        )
+
+        axes[0].plot(
+            list(sim.keys()),
+            list(sim.values()),
+            marker=marker,
+            linestyle="",
+            mew=1,
+            alpha=alpha,
+            color=color,
+            label=f"id: {s_id}, dist: {wasserstein_scipy:.2f}",
+        )
+
+        axes[1].plot(
+            *snapshot.cdf_from_histogram(sim),
+            alpha=alpha,
+            color=color,
+            linestyle="--",
+            label=f"{run.parameters.idx}, metric: {wasserstein_scipy:.2f}",
+        )
+    axes[0].set_ylabel("log10 nb of mutants")
+    axes[1].set_ylabel("cdf")
+    axes[1].set_xlabel("log10 nb of cells")
+    ax3.legend(*axes[0].get_legend_handles_labels(), loc=6, frameon=False)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.spines.right.set_visible(False)
+    ax3.spines.left.set_visible(False)
+    ax3.spines.top.set_visible(False)
+    ax3.spines.bottom.set_visible(False)
+    return fig

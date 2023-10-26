@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from futils import snapshot
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -39,20 +40,20 @@ def plot_results(
     ylims = ax.get_ylim()
     ax.vlines(x.mean(), ymin=ylims[0], ymax=ylims[1], linestyle="--", color="red")
     ax.minorticks_on()
-    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
+    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
 
     ax = sns.histplot(x=x, fill=True, linewidth=1.5, ax=g.ax_marg_x, **kwargs1)
     ax.set_xlim(*lim1)
     ax.set_ylabel(ax.get_ylabel(), fontsize="xx-large")
-    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
+    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
 
     ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
     ax.set_ylim(*lim2)
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
-    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
+    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
 
     plt.show()
 
