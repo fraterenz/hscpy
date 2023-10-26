@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 
 class Parameters:
@@ -30,6 +30,9 @@ class Parameters:
 
     def into_dict(self) -> Dict[str, Any]:
         return self.__dict__
+
+    def stringify(self, some_params: Set[str]) -> str:
+        return ", ".join([f"{k}={v}" for k, v in self.into_dict().items() if k in some_params])
 
 
 class ParametersFile:

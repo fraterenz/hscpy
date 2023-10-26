@@ -21,6 +21,7 @@ def plot_results(
     selected: pd.DataFrame, pair2plot: List[str], lim1, lim2, kwargs1, kwargs2
 ):
     assert len(pair2plot) == 2
+    tick_width = 1.1
 
     g = sns.JointGrid(ratio=2, marginal_ticks=True)
     x, y = selected[pair2plot[0]], selected[pair2plot[1]]
@@ -31,19 +32,27 @@ def plot_results(
         s=100,
         ax=g.ax_joint,
     )
-    ax.tick_params(axis="both", which="both", labelsize=14)
     ax.set_ylabel(ax.get_ylabel(), fontsize="xx-large")
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
+    xlims = ax.get_xlim()
+    ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
+    ylims = ax.get_ylim()
+    ax.vlines(x.mean(), ymin=ylims[0], ymax=ylims[1], linestyle="--", color="red")
+    ax.minorticks_on()
+    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
 
-    ax = sns.histplot(x=x, fill=True, linewidth=2, ax=g.ax_marg_x, **kwargs1)
+    ax = sns.histplot(x=x, fill=True, linewidth=1.5, ax=g.ax_marg_x, **kwargs1)
     ax.set_xlim(*lim1)
-    ax.tick_params(axis="both", which="both", labelsize=14)
     ax.set_ylabel(ax.get_ylabel(), fontsize="xx-large")
+    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
 
-    ax = sns.histplot(y=y, fill=True, linewidth=2, ax=g.ax_marg_y, **kwargs2)
+    ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
     ax.set_ylim(*lim2)
-    ax.tick_params(axis="both", which="both", labelsize=14)
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
+    ax.tick_params(which='major', width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which='minor', width=tick_width, length=3, labelsize=14)
 
     plt.show()
 
@@ -71,7 +80,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         [0, lims(priors, "mu")[1]],
         [0, lims(priors, "std")[1]],
         {"discrete": True},
-        {"binwidth": 0.005},
+        {"binwidth": 0.002},
     )
 
     plot_results(
@@ -80,7 +89,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         [0, lims(priors, "s")[1]],
         [0, lims(priors, "std")[1]],
         {"binwidth": 0.01},
-        {"binwidth": 0.005},
+        {"binwidth": 0.002},
     )
 
     plt.show()
