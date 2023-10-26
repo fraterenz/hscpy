@@ -21,6 +21,7 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 def plot_results(
     selected: pd.DataFrame, pair2plot: List[str], lim1, lim2, kwargs1, kwargs2
 ):
+    mapping = {"mu": r"$\mu$", "std": r"$\sigma$"}
     assert len(pair2plot) == 2
     tick_width = 1.1
 
@@ -33,8 +34,10 @@ def plot_results(
         s=100,
         ax=g.ax_joint,
     )
-    ax.set_ylabel(ax.get_ylabel(), fontsize="xx-large")
-    ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
+    label = ax.get_ylabel()
+    ax.set_ylabel(mapping.get(label, label), fontsize="xx-large")
+    label = ax.get_xlabel()
+    ax.set_xlabel(mapping.get(label, label), fontsize="xx-large")
     xlims = ax.get_xlim()
     ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
     ylims = ax.get_ylim()
@@ -51,6 +54,7 @@ def plot_results(
 
     ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
     ax.set_ylim(*lim2)
+    label = ax.get_xlabel()
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
     ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
     ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
