@@ -159,8 +159,9 @@ def plot_sfs_cdf(
     target: snapshot.Histogram,
     sfs_sims: List[sfs.RealisationSfs],
     markers: List[str] = ["o", "<", "*"],
-    colors: List[str] = ["cyan", "black", "yellowgreen"],
+    colors: List[str] = ["yellowgreen", "cyan", "black"],
     alpha: float = 0.45,
+    verbose: bool = True,
 ):
     fig = plt.figure(layout="constrained", figsize=(7, 4))
     subfigs = fig.subfigures(1, 2, wspace=-0.1, width_ratios=[2.4, 1])
@@ -193,6 +194,9 @@ def plot_sfs_cdf(
         wasserstein_scipy = stats.wasserstein_distance(
             u_values, v_values, u_weights, v_weights
         )
+        label = (
+            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"id: {s_id}"
+        )
 
         axes[0].plot(
             list(sim.keys()),
@@ -202,7 +206,7 @@ def plot_sfs_cdf(
             mew=1,
             alpha=alpha,
             color=color,
-            label=f"id: {s_id}, dist: {wasserstein_scipy:.2f}",
+            label=label,
         )
 
         axes[1].plot(
@@ -210,7 +214,7 @@ def plot_sfs_cdf(
             alpha=alpha,
             color=color,
             linestyle="--",
-            label=f"{run.parameters.idx}, metric: {wasserstein_scipy:.2f}",
+            label=label,
         )
     axes[0].set_ylabel("log10 nb of mutants")
     axes[1].set_ylabel("cdf")

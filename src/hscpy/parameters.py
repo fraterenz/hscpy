@@ -32,7 +32,9 @@ class Parameters:
         return self.__dict__
 
     def stringify(self, some_params: Set[str]) -> str:
-        return ", ".join([f"{k}={v}" for k, v in self.into_dict().items() if k in some_params])
+        return ", ".join(
+            [f"{k}={v}" for k, v in self.into_dict().items() if k in some_params]
+        )
 
 
 class ParametersFile:
