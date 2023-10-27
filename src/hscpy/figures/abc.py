@@ -19,7 +19,12 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 
 
 def plot_results(
-    selected: pd.DataFrame, pair2plot: List[str], lim1, lim2, kwargs1, kwargs2
+    selected: pd.DataFrame,
+    pair2plot: List[str],
+    lim1,
+    lim2,
+    kwargs1,
+    kwargs2,
 ):
     mapping = {"mu": r"$\mu$", "std": r"$\sigma$"}
     assert len(pair2plot) == 2
@@ -58,8 +63,7 @@ def plot_results(
     ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
     ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
     ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
-
-    plt.show()
+    return g
 
 
 def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
@@ -70,7 +74,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
     priors = abc_summary[["mu", "u", "s", "std"]].drop_duplicates()
 
     print(f"plotting {results.shape[0]} runs")
-    plot_results(
+    g_mu_s = plot_results(
         results,
         ["mu", "s"],
         [0, lims(priors, "mu")[1]],
@@ -79,7 +83,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         {"binwidth": 0.01},
     )
 
-    plot_results(
+    g_mu_std = plot_results(
         results,
         ["mu", "std"],
         [0, lims(priors, "mu")[1]],
@@ -88,7 +92,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         {"binwidth": 0.002},
     )
 
-    plot_results(
+    g_s_std = plot_results(
         results,
         ["s", "std"],
         [0, lims(priors, "s")[1]],
@@ -96,34 +100,30 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         {"binwidth": 0.01},
         {"binwidth": 0.002},
     )
-
-    plt.show()
+    return g_mu_s, g_mu_std, g_s_std
 
 
 def run_abc_filtering_on_clones(
-    df, runs2keep: int, single_timepoint: bool, nb_clones_diff: int, minimum_runs: int
+    df, quantile: float, nb_clones_diff: int, minimum_runs: int, verbose: bool = True
 ):
     idx_abc = dict()
+    view = df[df["clones diff"] <= nb_clones_diff]
+    idx_abc = abc.run_abc(view, quantile, minimum_runs, verbose=verbose)
+    g1, g2, g3 = plot_posteriors(idx_abc, view)
+    return idx_abc, g1, g2, g3
 
-    if single_timepoint:
-        for t in df.sort_values(by="timepoint").timepoint.unique():
-            print(f"{df.shape[0]} runs before filtering on nb of clones")
-            # first filter on clones
-            view = df[(df["clones diff"] <= nb_clones_diff) & (df.timepoint == t)]
-            nb_runs_after_clone_filtering = view.shape[0]
-            print(
-                f"{view.shape[0]} runs after filtering on nb of clones {view['clones'].unique()}"
-            )
 
-            # then take the quantile, s.t. the same number of runs for every
-            # timepoint are kept
-            quantile = runs2keep / (nb_runs_after_clone_filtering)
-            # run abc with wasserstein metric
-            idx_abc[t] = abc.run_abc(view, quantile, minimum_runs, verbose=True)
-            plot_posteriors(idx_abc[t], view)
-    else:
-        view = df[df["clones diff"] <= nb_clones_diff]
-        quantile = runs2keep / df.shape[0]
-        idx_abc = abc.run_abc(view, quantile, minimum_runs, verbose=True)
-        plot_posteriors(idx_abc, view)
-    return idx_abc
+def get_idx_smaller_distance_clones_from_results(
+    abc_summary: pd.DataFrame, abc_results: abc.AbcResults
+) -> int:
+    """From all runs accepted by ABC, get the index of the run with the minimal
+    distance between the number of clones (likely all the runs with a number of
+    clones equal to the number of clones of the target).
+    Then, among this subset of runs, take the idx of the run with the smaller
+    wasserstein distance.
+    """
+    view = abc_summary[abc_summary.idx.isin(abc_results.get_idx())]
+    second_view = view[view["clones diff"] == view["clones diff"].min()]
+    return second_view.loc[
+        second_view.wasserstein == second_view.wasserstein.min(), "idx"
+    ].squeeze()
