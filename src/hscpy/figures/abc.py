@@ -1,10 +1,11 @@
-from typing import List, Tuple
+from pathlib import Path
+from typing import Dict, List, Tuple
 from futils import snapshot
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from hscpy import abc
+from hscpy import abc, sfs
 
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
@@ -104,11 +105,14 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
 
 
 def run_abc_filtering_on_clones(
-    df, quantile: float, nb_clones_diff: int, minimum_runs: int, verbose: bool = True
+    df, thresholds: abc.AbcThresholds, verbose: bool = True
 ):
     idx_abc = dict()
-    view = df[df["clones diff"] <= nb_clones_diff]
-    idx_abc = abc.run_abc(view, quantile, minimum_runs, verbose=verbose)
+    view = df[df["clones diff"] <= thresholds.nb_clones_diff]
+    tot_runs = df.age.unique().shape[0]
+    minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
+    print(f"{minimum_runs} vs {tot_runs}")
+    idx_abc = abc.run_abc(view, thresholds.quantile, minimum_runs, verbose=verbose)
     g1, g2, g3 = plot_posteriors(idx_abc, view)
     return idx_abc, g1, g2, g3
 
@@ -127,3 +131,90 @@ def get_idx_smaller_distance_clones_from_results(
     return second_view.loc[
         second_view.wasserstein == second_view.wasserstein.min(), "idx"
     ].squeeze()
+
+
+def abc_simulated_validation(
+    target_stem: str,
+    sfs_sims: Dict[float, List[sfs.RealisationSfs]],
+    counts: pd.DataFrame,
+    thresholds: abc.AbcThresholds,
+    show_priors: bool = True,
+):
+    target_sfs_simulated = {
+        t: sfs_.sfs
+        for t, sfs_donor in sfs_sims.items()
+        for sfs_ in sfs_donor
+        if sfs_.parameters.path.stem == target_stem
+    }
+
+    assert len(target_sfs_simulated), "wrong `target_stem`"
+
+    abc_simulated = abc.sfs_summary_statistic_wasserstein(
+        sfs_sims, target_sfs_simulated, target_stem
+    )
+
+    abc_simulated["target"] = (
+        abc_simulated.path.map(lambda x: Path(x).stem) == target_stem
+    )
+
+    abc_simulated = abc_simulated.merge(
+        right=counts[["age", "idx", "variant counts detected"]],
+        how="left",
+        left_on=["idx", "timepoint"],
+        right_on=["idx", "age"],
+        validate="one_to_one",
+    )
+
+    abc_simulated = abc_simulated.merge(
+        right=abc_simulated.loc[
+            abc_simulated.target, ["variant counts detected", "timepoint"]
+        ].rename({"variant counts detected": "clones"}, axis=1),
+        how="left",
+        on="timepoint",
+        validate="many_to_one",
+    )
+
+    abc_simulated["clones diff"] = (
+        abc_simulated["clones"] - abc_simulated["variant counts detected"]
+    ).abs()
+
+    if show_priors:
+        priors = abc_simulated[["mu", "u", "s", "std"]].drop_duplicates()
+
+        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
+        ax = plot_prior(priors["s"], ax=ax, binwidth=0.01)
+        plt.show()
+
+        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
+        ax = plot_prior(priors["std"], ax=ax, binwidth=0.001)
+        plt.show()
+
+        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
+        ax = plot_prior(priors["mu"], ax=ax, discrete=True)
+        plt.show()
+
+        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
+        ax = plot_prior(priors["u"], ax=ax)
+        plt.show()
+
+        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
+        sns.histplot(abc_simulated["wasserstein"], binwidth=0.01, ax=ax)
+        plt.show()
+
+    tot_runs = abc_simulated.age.unique().shape[0]
+    minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
+    print(f"{minimum_runs} vs {tot_runs}")
+
+    results, g1, g2, g3 = run_abc_filtering_on_clones(abc_simulated, thresholds)
+
+    mu_target, s_target, std_target = (
+        abc_simulated.loc[abc_simulated.target, "mu"].squeeze(),
+        abc_simulated.loc[abc_simulated.target, "s"].squeeze(),
+        abc_simulated.loc[abc_simulated.target, "std"].squeeze(),
+    )
+
+    g1.ax_joint.plot(mu_target, s_target, marker="x", color="black", mew=2)
+    g2.ax_joint.plot(mu_target, std_target, marker="x", color="black", mew=2)
+    g3.ax_joint.plot(s_target, std_target, marker="x", color="black", mew=2)
+
+    return abc_simulated, g1, g2, g3

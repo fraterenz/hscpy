@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 from matplotlib import colors
 import matplotlib.pyplot as plt
 from scipy import stats
+from dataclasses import dataclass
 from futils import snapshot
 
 from hscpy.sfs import RealisationSfs, process_sfs
@@ -89,6 +90,13 @@ def filter_per_timepoint(
         if verbose:
             print(f"{len(kept)} runs accepted for timepoint {t}")
     return pd.concat(accepted)
+
+
+@dataclass
+class AbcThresholds:
+    quantile: float
+    nb_clones_diff: int
+    proportion_runs_to_discard: float
 
 
 class AbcResults:
