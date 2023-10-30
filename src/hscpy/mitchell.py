@@ -73,5 +73,7 @@ def sfs_donor_mitchell(
     sfs_donor = filtered_matrix.sum(axis=1).value_counts()
     sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
-    my_sfs = snapshot.Histogram({x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())})
+    my_sfs = snapshot.histogram_from_dict(
+        {x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())}
+    )
     return my_sfs

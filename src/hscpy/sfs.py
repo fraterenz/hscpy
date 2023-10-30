@@ -34,7 +34,7 @@ def process_sfs(
     jcells = [np.log10(k) for k in my_sfs.keys()]
     if log_transform:
         jmuts = [np.log10(val) for val in jmuts]
-    return snapshot.Histogram({k: val for k, val in zip(jcells, jmuts)})
+    return snapshot.histogram_from_dict({k: val for k, val in zip(jcells, jmuts)})
 
 
 class Correction(StrEnum):
