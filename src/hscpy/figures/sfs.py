@@ -10,6 +10,17 @@ from hscpy import sfs
 from hscpy.figures import AgeSims, Donor, PlotOptions
 
 
+def plot_sfs_avg_unormalised(
+    ax,
+    my_sfs: List[snapshot.Histogram],
+    options_plot: PlotOptions,
+    **kwargs,
+):
+    pooled = snapshot.Uniformise.pooled_histogram(my_sfs)
+    ax = plot_sfs(ax, pooled, normalise=False, options=options_plot, **kwargs)
+    return ax
+
+
 def plot_sfs_avg(
     ax,
     my_sfs: List[snapshot.Histogram],
@@ -38,7 +49,10 @@ def plot_sfs(
     ax.plot(jcells, jmuts, **kwargs)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_ylabel("density of variants", fontsize="xx-large")
+    ax.set_ylabel(
+        "density of variants" if normalise else "number of variants",
+        fontsize="xx-large",
+    )
     ax.set_xlabel("number of cells", fontsize="xx-large")
     ax.tick_params(axis="both", which="both", labelsize=14)
     return ax
