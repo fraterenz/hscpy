@@ -13,7 +13,7 @@ from hscpy.sfs import RealisationSfs, process_sfs
 
 def get_values_weights_from_sfs(
     sfs_: snapshot.Histogram,
-) -> Tuple[List[int], List[int]]:
+) -> Tuple[List[float], List[float]]:
     sfs_processed = process_sfs(
         snapshot.Histogram(sfs_), normalise=False, log_transform=True
     )
@@ -48,8 +48,8 @@ def sfs_summary_statistic_wasserstein(
 
 def sfs_summary_statistic_wasserstein_timepoint(
     sims: List[RealisationSfs],
-    v_values: List[int],
-    v_weights: List[int],
+    v_values: List[float],
+    v_weights: List[float],
     target_name: str,
     age: int | float,
 ):

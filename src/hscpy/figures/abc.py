@@ -203,7 +203,6 @@ def abc_simulated_validation(
 
     tot_runs = abc_simulated.age.unique().shape[0]
     minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
-    print(f"{minimum_runs} vs {tot_runs}")
 
     results, g1, g2, g3 = run_abc_filtering_on_clones(abc_simulated, thresholds)
 

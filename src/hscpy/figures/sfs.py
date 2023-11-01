@@ -183,12 +183,12 @@ def plot_sfs_cdf(
     axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
     ax3 = subfigs[1].subplots(1, 1)
 
-    target = sfs.process_sfs(target, normalise=False, log_transform=True)
-    u_values, u_weights = list(target.keys()), list(target.values())
+    target_processed = sfs.process_sfs(target, normalise=False, log_transform=True)
+    u_values, u_weights = list(target_processed.keys()), list(target_processed.values())
 
     axes[0].plot(
-        list(target.keys()),
-        list(target.values()),
+        list(target_processed.keys()),
+        list(target_processed.values()),
         marker="x",
         linestyle="",
         color="purple",
@@ -196,7 +196,7 @@ def plot_sfs_cdf(
         mew=2,
     )
 
-    axes[1].plot(*snapshot.cdf_from_histogram(target), color="purple", label="Mitchell")
+    axes[1].plot(*sfs.cdf_from_dict(target_processed), color="purple", label="Mitchell")
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
@@ -224,7 +224,7 @@ def plot_sfs_cdf(
         )
 
         axes[1].plot(
-            *snapshot.cdf_from_histogram(sim),
+            *sfs.cdf_from_dict(sim),
             alpha=alpha,
             color=color,
             linestyle="--",

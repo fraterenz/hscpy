@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import numpy as np
 from scipy import stats
 from enum import StrEnum, auto
@@ -16,9 +16,19 @@ class RealisationSfs:
         self.sfs = load_histogram(path)
 
 
+def cdf_from_dict(my_dict: Dict[float, float]) -> Tuple[np.ndarray, np.ndarray]:
+    ordered_distr = dict(sorted(my_dict.items()))
+    tot = sum(ordered_distr.values())
+    probs = np.array(
+        np.cumsum([ele / tot for ele in ordered_distr.values()], dtype=float),
+        dtype=float,
+    )
+    return np.array(list(ordered_distr.keys())), probs
+
+
 def process_sfs(
     my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
-) -> snapshot.Histogram:
+) -> Dict[float, float]:
     """This modifies the sfs by removing the entry at 0 and log10 transform the
     jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
     `True`.
@@ -34,12 +44,11 @@ def process_sfs(
     jcells = [np.log10(k) for k in my_sfs.keys()]
     if log_transform:
         jmuts = [np.log10(val) for val in jmuts]
-    return snapshot.histogram_from_dict({k: val for k, val in zip(jcells, jmuts)})
+    return {float(k): float(val) for k, val in zip(jcells, jmuts)}
 
 
 class Correction(StrEnum):
     ONE_OVER_F = auto()
-
     ONE_OVER_F_SQUARED = auto()
 
 
