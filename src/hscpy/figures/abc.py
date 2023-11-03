@@ -26,6 +26,7 @@ def plot_results(
     lim2,
     kwargs1,
     kwargs2,
+    show_mean: bool,
 ):
     mapping = {"mu": r"$\mu$", "std": r"$\sigma$"}
     assert len(pair2plot) == 2
@@ -44,10 +45,10 @@ def plot_results(
     ax.set_ylabel(mapping.get(label, label), fontsize="xx-large")
     label = ax.get_xlabel()
     ax.set_xlabel(mapping.get(label, label), fontsize="xx-large")
-    xlims = ax.get_xlim()
-    ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
-    ylims = ax.get_ylim()
-    ax.vlines(x.mean(), ymin=ylims[0], ymax=ylims[1], linestyle="--", color="red")
+    xlims, ylims = ax.get_xlim(), ax.get_ylim()
+    if show_mean:
+        ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
+        ax.vlines(x.mean(), ymin=ylims[0], ymax=ylims[1], linestyle="--", color="red")
     ax.minorticks_on()
     ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
     ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
@@ -67,7 +68,7 @@ def plot_results(
     return g
 
 
-def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
+def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show_mean: bool):
     results = abc_summary.loc[
         abc_summary.idx.isin(abc_results.get_idx()), ["mu", "s", "std"]
     ].drop_duplicates()
@@ -82,6 +83,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         [0, lims(priors, "s")[1]],
         {"discrete": True},
         {"binwidth": 0.01},
+        show_mean
     )
 
     g_mu_std = plot_results(
@@ -91,6 +93,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         [0, lims(priors, "std")[1]],
         {"discrete": True},
         {"binwidth": 0.002},
+        show_mean
     )
 
     g_s_std = plot_results(
@@ -100,12 +103,13 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame):
         [0, lims(priors, "std")[1]],
         {"binwidth": 0.01},
         {"binwidth": 0.002},
+        show_mean
     )
     return g_mu_s, g_mu_std, g_s_std
 
 
 def run_abc_filtering_on_clones(
-    df, thresholds: abc.AbcThresholds, verbose: bool = True
+    df, thresholds: abc.AbcThresholds, show_mean: bool = False, verbose: bool = True
 ):
     idx_abc = dict()
     view = df[df["clones diff"] <= thresholds.nb_clones_diff]
@@ -113,7 +117,7 @@ def run_abc_filtering_on_clones(
     minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
     print(f"{minimum_runs} vs {tot_runs}")
     idx_abc = abc.run_abc(view, thresholds.quantile, minimum_runs, verbose=verbose)
-    g1, g2, g3 = plot_posteriors(idx_abc, view)
+    g1, g2, g3 = plot_posteriors(idx_abc, view ,show_mean)
     return idx_abc, g1, g2, g3
 
 
