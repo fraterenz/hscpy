@@ -1,5 +1,6 @@
 import random
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -172,6 +173,7 @@ def plot_sfs_cdf(
     idx2show: Set[int],
     target: snapshot.Histogram,
     sfs_sims: List[sfs.RealisationSfs],
+    age: float,
     markers: List[str] = ["o", "<", "*"],
     colors: List[str] = ["yellowgreen", "cyan", "black"],
     alpha: float = 0.45,
@@ -187,16 +189,17 @@ def plot_sfs_cdf(
     u_values, u_weights = list(target_processed.keys()), list(target_processed.values())
 
     axes[0].plot(
-        list(target_processed.keys()),
-        list(target_processed.values()),
+        [10**ele for ele in target_processed.keys()],
+        [10**ele for ele in target_processed.values()],
         marker="x",
         linestyle="",
         color="purple",
         label=f"Mitchell",
         mew=2,
     )
-
-    axes[1].plot(*sfs.cdf_from_dict(target_processed), color="purple", label="Mitchell")
+    cdf_x, cdf_y = sfs.cdf_from_dict(target_processed)
+    axes[1].plot([10**ele for ele in cdf_x], cdf_y, color="purple", label="Mitchell")
+    axes[1].set_xscale("log")
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
@@ -209,12 +212,12 @@ def plot_sfs_cdf(
             u_values, v_values, u_weights, v_weights
         )
         label = (
-            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"id: {s_id}"
+            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"simulation"
         )
 
-        axes[0].plot(
-            list(sim.keys()),
-            list(sim.values()),
+        axes[0].loglog(
+            [10**ele for ele in sim.keys()],
+            [10**ele for ele in sim.values()],
             marker=marker,
             linestyle="",
             mew=1,
@@ -223,17 +226,26 @@ def plot_sfs_cdf(
             label=label,
         )
 
+        cdf_x, cdf_y = sfs.cdf_from_dict(sim)
+
         axes[1].plot(
-            *sfs.cdf_from_dict(sim),
+            [10**ele for ele in cdf_x],
+            cdf_y,
             alpha=alpha,
             color=color,
             linestyle="--",
             label=label,
         )
-    axes[0].set_ylabel("log10 nb of mutants")
-    axes[1].set_ylabel("cdf")
-    axes[1].set_xlabel("log10 nb of cells")
-    ax3.legend(*axes[0].get_legend_handles_labels(), loc=6, frameon=False)
+    axes[0].set_ylabel("nb of mutants", size="x-large")
+    axes[1].set_ylabel("cdf", size="x-large")
+    axes[1].set_xlabel("nb of cells", size="x-large")
+
+    tick_width = 1.1
+    for ax_ in axes:
+        ax_.minorticks_on()
+        ax_.tick_params(which="major", width=tick_width, length=5, labelsize=14)
+        ax_.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
+    ax3.legend(*axes[0].get_legend_handles_labels(), title=f"{age:.0f} years", fontsize="large", title_fontsize="x-large", loc=6, frameon=False)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.spines.right.set_visible(False)
