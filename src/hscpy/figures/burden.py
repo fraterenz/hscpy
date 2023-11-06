@@ -8,16 +8,14 @@ import numpy as np
 import seaborn as sns
 from hscpy.burden import RealisationBurden
 
-from hscpy.figures import AgeSims, Donor, PlotOptions
+from hscpy.figures import AgeSims, PlotOptions
 
 
 def plot_simulations_burden(
-    donors: List[Donor],
     burdens: Dict[AgeSims, List[RealisationBurden]],
     options_plot: PlotOptions,
 ):
     fig, ax = plt.subplots(1, 1, figsize=options_plot.figsize)
-    raise NotImplementedError
 
     ax.plot(
         summary["age"],
@@ -146,4 +144,4 @@ def plot_simulations_burden(
     if options_plot.save:
         plt.savefig(f"burden_year0{options_plot.extension}")
 
-    plt.show()
+    return fig

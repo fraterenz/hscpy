@@ -8,7 +8,7 @@ from futils import snapshot
 from scipy import stats
 from hscpy import sfs
 
-from hscpy.figures import AgeSims, Donor, PlotOptions
+from hscpy.figures import AgeSims, PlotOptions
 
 
 def plot_sfs_avg_unormalised(
@@ -83,97 +83,11 @@ def plot_sfs_correction(
     return plot_sfs(ax, my_sfs, normalise, options, **kwargs)
 
 
-def plot_sfs_patient(
-    ax,
-    donor: Donor,
-    path2mitchell: Path,
-    remove_indels: bool,
-    normalise: bool,
-    options: PlotOptions,
-    **kwargs,
-):
-    raise NotImplementedError
-    my_sfs = mitchell.sfs_donor_mitchell(donor.name, path2mitchell, remove_indels)
-    return plot_sfs(ax, my_sfs, normalise, options, **kwargs)
-
-
-def plot_simulations_donors_sfs(
-    donors: List[Donor],
-    burdens: Dict[AgeSims, List[sfs.RealisationSfs]],
-    options_plot: PlotOptions,
-    normalise: bool,
-    corrected_variants: Dict[str, sfs.CorrectedVariants],
-    id2show: str | None = None,
-):
-    raise NotImplementedError
-    idx2show = (
-        id2show if id2show else random.sample(list(sims.my_sfs[3].keys()), k=1)[0]
-    )
-    for donor in sims.donors:
-        fig, ax = plt.subplots(1, 1, figsize=options_plot.figsize, layout="tight")
-
-        ax = plot_sfs_sim_with_id(
-            ax,
-            sims.my_sfs[donor.id_timepoint][idx2show],
-            normalise=True,
-            options=options_plot,
-            color="yellowgreen",
-            marker="d",
-            linestyle="",
-            alpha=0.6,
-            label=f"1 run with id {idx2show}",
-        )
-
-        ax = plot_sfs_avg(
-            ax,
-            sims.my_sfs[donor.id_timepoint],
-            age=0,
-            options=options_plot,
-            color="blue",
-            linestyle="-",
-            label=f"avg of {sims.sim_options.runs} runs",
-            alpha=0.6,
-        )
-
-        ax = plot_sfs_correction(
-            ax,
-            corrected_variants[donor.name],
-            sims.sim_options.sample,
-            normalise=True,
-            options=options_plot,
-            color="grey",
-            label=r"$1/f^2$ sampled",
-            lw=2,
-        )
-
-        ax = plot_sfs_patient(
-            ax,
-            donor,
-            paths2patients,
-            remove_indels=False,
-            normalise=True,
-            options=options_plot,
-            color="purple",
-            label=f"{donor.name}, age: {donor.age:.0f}",
-            marker="x",
-            linestyle="",
-            mew=2,
-        )
-        ax.legend(prop={"size": 13}, fancybox=False)
-        plt.tight_layout()
-        if options_plot.save:
-            plt.savefig(
-                f"SFS_{sims.sim_options.sample}sample_{sims.sim_options.cells}cells_{idx2show}run_{donor.name}{options_plot.extension}",
-                transparent=True,
-            )
-        plt.show()
-
-
 def plot_sfs_cdf(
     idx2show: Set[int],
     target: snapshot.Histogram,
     sfs_sims: List[sfs.RealisationSfs],
-    age: float,
+    age: AgeSims,
     markers: List[str] = ["o", "<", "*"],
     colors: List[str] = ["yellowgreen", "cyan", "black"],
     alpha: float = 0.45,
@@ -245,7 +159,14 @@ def plot_sfs_cdf(
         ax_.minorticks_on()
         ax_.tick_params(which="major", width=tick_width, length=5, labelsize=14)
         ax_.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
-    ax3.legend(*axes[0].get_legend_handles_labels(), title=f"{age:.0f} years", fontsize="large", title_fontsize="x-large", loc=6, frameon=False)
+    ax3.legend(
+        *axes[0].get_legend_handles_labels(),
+        title=f"{age:.0f} years",
+        fontsize="large",
+        title_fontsize="x-large",
+        loc=6,
+        frameon=False,
+    )
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.spines.right.set_visible(False)

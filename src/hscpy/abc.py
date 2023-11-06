@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from dataclasses import dataclass
 from futils import snapshot
+from hscpy.figures import AgeSims
 
 from hscpy.sfs import RealisationSfs, process_sfs
 
@@ -21,8 +22,8 @@ def get_values_weights_from_sfs(
 
 
 def sfs_summary_statistic_wasserstein(
-    sims: Dict[int | float, List[RealisationSfs]],
-    target: Dict[int | float, snapshot.Histogram],
+    sims: Dict[AgeSims, List[RealisationSfs]],
+    target: Dict[AgeSims, snapshot.Histogram],
     target_name: str,
 ) -> pd.DataFrame:
     """

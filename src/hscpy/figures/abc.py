@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 from hscpy import abc, sfs
+from hscpy.figures import AgeSims
 
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
@@ -68,7 +69,9 @@ def plot_results(
     return g
 
 
-def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show_mean: bool):
+def plot_posteriors(
+    abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show_mean: bool
+):
     results = abc_summary.loc[
         abc_summary.idx.isin(abc_results.get_idx()), ["mu", "s", "std"]
     ].drop_duplicates()
@@ -83,7 +86,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show
         [0, lims(priors, "s")[1]],
         {"discrete": True},
         {"binwidth": 0.01},
-        show_mean
+        show_mean,
     )
 
     g_mu_std = plot_results(
@@ -93,7 +96,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show
         [0, lims(priors, "std")[1]],
         {"discrete": True},
         {"binwidth": 0.002},
-        show_mean
+        show_mean,
     )
 
     g_s_std = plot_results(
@@ -103,7 +106,7 @@ def plot_posteriors(abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show
         [0, lims(priors, "std")[1]],
         {"binwidth": 0.01},
         {"binwidth": 0.002},
-        show_mean
+        show_mean,
     )
     return g_mu_s, g_mu_std, g_s_std
 
@@ -117,7 +120,7 @@ def run_abc_filtering_on_clones(
     minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
     print(f"{minimum_runs} vs {tot_runs}")
     idx_abc = abc.run_abc(view, thresholds.quantile, minimum_runs, verbose=verbose)
-    g1, g2, g3 = plot_posteriors(idx_abc, view ,show_mean)
+    g1, g2, g3 = plot_posteriors(idx_abc, view, show_mean)
     return idx_abc, g1, g2, g3
 
 
@@ -139,7 +142,7 @@ def get_idx_smaller_distance_clones_from_results(
 
 def abc_simulated_validation(
     target_stem: str,
-    sfs_sims: Dict[float, List[sfs.RealisationSfs]],
+    sfs_sims: Dict[AgeSims, List[sfs.RealisationSfs]],
     counts: pd.DataFrame,
     thresholds: abc.AbcThresholds,
     show_priors: bool = True,

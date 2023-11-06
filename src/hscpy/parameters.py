@@ -19,7 +19,6 @@ class Parameters:
     ):
         self.sample = sample
         self.path = path
-        self.sample = sample
         self.cells = cells
         self.b0 = b0
         self.mu = mu

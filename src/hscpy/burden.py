@@ -17,6 +17,7 @@ class RealisationBurden:
 def compute_mean_variance(
     burden: snapshot.Histogram | snapshot.Distribution,
 ) -> Tuple[float, float]:
+    # cells will be 1 if it's a distribution
     cells = sum(burden.values())
     mean = sum(map(lambda entry: entry[0] * entry[1] / cells, burden.items()))
     variance = sum(

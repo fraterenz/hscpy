@@ -5,6 +5,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from dataclasses import dataclass
 from futils import snapshot
+from hscpy.figures import AgeSims
 from hscpy.parameters import parameters_from_path
 from hscpy import load_histogram, parse_path2folder_xdoty_years
 
@@ -16,7 +17,7 @@ class RealisationSfs:
         self.sfs = load_histogram(path)
 
 
-def cdf_from_dict(my_dict: Dict[float, float]) -> Tuple[np.ndarray, np.ndarray]:
+def cdf_from_dict(my_dict: Dict[AgeSims, float]) -> Tuple[np.ndarray, np.ndarray]:
     ordered_distr = dict(sorted(my_dict.items()))
     tot = sum(ordered_distr.values())
     probs = np.array(
@@ -28,7 +29,7 @@ def cdf_from_dict(my_dict: Dict[float, float]) -> Tuple[np.ndarray, np.ndarray]:
 
 def process_sfs(
     my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
-) -> Dict[float, float]:
+) -> Dict[AgeSims, float]:
     """This modifies the sfs by removing the entry at 0 and log10 transform the
     jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
     `True`.
@@ -44,7 +45,7 @@ def process_sfs(
     jcells = [np.log10(k) for k in my_sfs.keys()]
     if log_transform:
         jmuts = [np.log10(val) for val in jmuts]
-    return {float(k): float(val) for k, val in zip(jcells, jmuts)}
+    return {AgeSims(k): float(val) for k, val in zip(jcells, jmuts)}
 
 
 class Correction(StrEnum):
@@ -104,7 +105,7 @@ def compute_variants(
     return CorrectedVariants(correction, corrected, variants2correct, frequencies)
 
 
-def load_all_sfs_by_age(path2dir: Path) -> Dict[float, List[RealisationSfs]]:
+def load_all_sfs_by_age(path2dir: Path) -> Dict[AgeSims, List[RealisationSfs]]:
     assert path2dir.is_dir()
     sfs_sims = dict()
 

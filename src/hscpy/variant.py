@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from hscpy import load_variant, parse_path2folder_xdoty_years
+from hscpy.figures import AgeSims
 
 from hscpy.parameters import parameters_from_path
 
@@ -28,8 +29,8 @@ class RealisationVariantCounts:
 
 def _variant_counts_df(
     variants: Union[
-        Dict[float, List[RealisationVariantCounts]],
-        Dict[float, List[RealisationVariantCountsDetected]],
+        Dict[AgeSims, List[RealisationVariantCounts]],
+        Dict[AgeSims, List[RealisationVariantCountsDetected]],
     ]
 ) -> List[Dict[str, Any]]:
     var = []
@@ -49,7 +50,7 @@ def variant_counts_from_dectected(
 
 
 def variant_counts_detected_df(
-    variants: Dict[float, List[RealisationVariantCountsDetected]]
+    variants: Dict[AgeSims, List[RealisationVariantCountsDetected]]
 ) -> pd.DataFrame:
     df = pd.DataFrame.from_records(_variant_counts_df(variants))
     return df.rename({"counts": "variant counts detected"}, axis=1)
@@ -61,6 +62,7 @@ def load_all_detected_var_counts_by_age(
 ) -> Dict[float, List[RealisationVariantCountsDetected]]:
     assert path2dir.is_dir()
     var_counts_sims = dict()
+    i = 0
 
     for path in path2dir.iterdir():
         if path.is_dir():
@@ -88,7 +90,7 @@ def load_all_var_counts_by_age(
 
 
 def variant_counts_df(
-    variants: Dict[float, List[RealisationVariantCounts]]
+    variants: Dict[AgeSims, List[RealisationVariantCounts]]
 ) -> pd.DataFrame:
     df = pd.DataFrame.from_records(_variant_counts_df(variants))
     return df.rename({"counts": "variant counts"}, axis=1)
@@ -106,6 +108,7 @@ def load_all_var_frac_by_age(
 ) -> Dict[float, List[RealisationVariantFractions]]:
     assert path2dir.is_dir()
     var_frac_sims = dict()
+    i = 0
 
     for path in path2dir.iterdir():
         if path.is_dir():
