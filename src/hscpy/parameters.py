@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, Tuple
 
 
 class Parameters:
@@ -98,3 +98,50 @@ def params_into_dataframe(params: List[Parameters]) -> pd.DataFrame:
     df["sample"] = df["sample"].astype(int)
     df.mu = df.mu.astype(int)
     return df
+
+
+def params_files_into_dataframe(params: List[ParametersFile]) -> pd.DataFrame:
+    df = pd.DataFrame.from_records([param.into_dict() for param in params])
+    df.idx = df.idx.astype(int)
+    df.cells = df.cells.astype(int)
+    df.mu = df.mu.astype(int)
+    return df
+
+
+def is_filtered_sim(
+    sim: Path, mu: float, mean: float, std: float, b0: float
+) -> Tuple[bool, ParametersFile]:
+    params = parse_filename_into_parameters(sim)
+    my_dict = params.into_dict()
+    return (
+        (
+            abs(my_dict["s"] - mean) <= 0.02
+            and abs(my_dict["mu"] - mu) <= 0.1
+            and abs(my_dict["std"] - std) <= 0.02
+            and abs(my_dict["b0"] - b0) <= 0.1
+        ),
+        params,
+    )
+
+
+def get_params_filtered_sim(
+    path2dir: Path, mu: float, mean: float, std: float, b0: float
+) -> List[ParametersFile]:
+    params = list()
+    for sim in path2dir.iterdir():
+        is_ok, param = is_filtered_sim(sim, mu, mean, std, b0)
+        if is_ok:
+            params.append(param)
+    return params
+
+
+def filter_simulations(
+    path2dir: Path,
+    mu: float,
+    mean: float,
+    std: float,
+    b0: float,
+) -> pd.DataFrame:
+    return params_files_into_dataframe(
+        get_params_filtered_sim(path2dir, mu, mean, std, b0)
+    )
