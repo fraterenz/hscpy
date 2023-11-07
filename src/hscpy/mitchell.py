@@ -4,7 +4,6 @@ from futils import snapshot
 from pathlib import Path
 from typing import Dict, List, NewType, Set, Tuple
 
-from hscpy import sfs
 
 Mitchell = NewType("Mitchell", pd.DataFrame)
 
