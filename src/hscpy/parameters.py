@@ -128,10 +128,12 @@ def get_params_filtered_sim(
     path2dir: Path, mu: float, mean: float, std: float, b0: float
 ) -> List[ParametersFile]:
     params = list()
-    for sim in path2dir.iterdir():
-        is_ok, param = is_filtered_sim(sim, mu, mean, std, b0)
-        if is_ok:
-            params.append(param)
+    for path in path2dir.iterdir():
+        for sim in path.glob("*.json"):
+            is_ok, param = is_filtered_sim(sim, mu, mean, std, b0)
+            if is_ok:
+                params.append(param)
+        break
     return params
 
 
