@@ -217,4 +217,4 @@ def load_realisations(
 
             print(f"loaded {i + 1} files from {path}")
 
-    return realisations
+    return dict(sorted(realisations.items()))
