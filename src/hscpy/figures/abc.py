@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from hscpy import abc, sfs
+from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
 
@@ -142,7 +142,7 @@ def get_idx_smaller_distance_clones_from_results(
 
 def abc_simulated_validation(
     target_stem: str,
-    sfs_sims: Dict[AgeSims, List[sfs.RealisationSfs]],
+    sfs_sims: Dict[AgeSims, List[realisation.RealisationSfs]],
     counts: pd.DataFrame,
     thresholds: abc.AbcThresholds,
     show_priors: bool = True,

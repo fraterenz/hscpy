@@ -6,7 +6,7 @@ from typing import Dict, List, Set
 
 from futils import snapshot
 from scipy import stats
-from hscpy import sfs
+from hscpy import realisation
 
 from hscpy.figures import AgeSims, PlotOptions
 
@@ -71,7 +71,7 @@ def plot_sfs_sim_with_id(
 
 def plot_sfs_correction(
     ax,
-    correction: sfs.CorrectedVariants,
+    correction: realisation.CorrectedVariants,
     normalise: bool,
     options: PlotOptions,
     **kwargs,
@@ -86,7 +86,7 @@ def plot_sfs_correction(
 def plot_sfs_cdf(
     idx2show: Set[int],
     target: snapshot.Histogram,
-    sfs_sims: List[sfs.RealisationSfs],
+    sfs_sims: List[realisation.RealisationSfs],
     age: AgeSims,
     markers: List[str] = ["o", "<", "*"],
     colors: List[str] = ["yellowgreen", "cyan", "black"],
@@ -99,7 +99,9 @@ def plot_sfs_cdf(
     axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
     ax3 = subfigs[1].subplots(1, 1)
 
-    target_processed = sfs.process_sfs(target, normalise=False, log_transform=True)
+    target_processed = realisation.process_sfs(
+        target, normalise=False, log_transform=True
+    )
     u_values, u_weights = list(target_processed.keys()), list(target_processed.values())
 
     axes[0].plot(
@@ -111,7 +113,7 @@ def plot_sfs_cdf(
         label=f"Mitchell",
         mew=2,
     )
-    cdf_x, cdf_y = sfs.cdf_from_dict(target_processed)
+    cdf_x, cdf_y = realisation.cdf_from_dict(target_processed)
     axes[1].plot([10**ele for ele in cdf_x], cdf_y, color="purple", label="Mitchell")
     axes[1].set_xscale("log")
 
@@ -120,7 +122,7 @@ def plot_sfs_cdf(
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 
-        sim = sfs.process_sfs(run.sfs, normalise=False, log_transform=True)
+        sim = realisation.process_sfs(run.sfs, normalise=False, log_transform=True)
         v_values, v_weights = list(sim.keys()), list(sim.values())
         wasserstein_scipy = stats.wasserstein_distance(
             u_values, v_values, u_weights, v_weights
@@ -140,7 +142,7 @@ def plot_sfs_cdf(
             label=label,
         )
 
-        cdf_x, cdf_y = sfs.cdf_from_dict(sim)
+        cdf_x, cdf_y = realisation.cdf_from_dict(sim)
 
         axes[1].plot(
             [10**ele for ele in cdf_x],
