@@ -52,10 +52,10 @@ def plot_sfs(
     ax.set_yscale("log")
     ax.set_ylabel(
         "density of variants" if normalise else "number of variants",
-        fontsize="xx-large",
+        # fontsize="xx-large",
     )
-    ax.set_xlabel("number of cells", fontsize="xx-large")
-    ax.tick_params(axis="both", which="both", labelsize=14)
+    ax.set_xlabel("number of cells")#, fontsize="xx-large")
+    ax.tick_params(axis="both", which="both") #labelsize=14)
     return ax
 
 
@@ -164,8 +164,8 @@ def plot_sfs_cdf(
     ax3.legend(
         *axes[0].get_legend_handles_labels(),
         title=f"{age:.0f} years",
-        fontsize="large",
-        title_fontsize="x-large",
+        #fontsize="large",
+        #title_fontsize="x-large",
         loc=6,
         frameon=False,
     )
