@@ -196,12 +196,16 @@ def load_realisations(
         i = 0
         if path.is_dir():
             realisations[parse_path2folder_xdoty_years(path)] = list()
-            for i, p in enumerate(path.glob("*.json")):
+            for p in path.glob("*.json"):
                 # avoid loading sim if not needed
                 if filtering:
                     idx = parse_filename_into_parameters(p).idx
                     if idx not in filtering:
                         continue
+                    else:
+                        i += 1
+                else:
+                    i += 1
                 if realisation == RealisationKind.BURDEN:
                     realisations[parse_path2folder_xdoty_years(p.parent)].append(
                         RealisationBurden(p)
