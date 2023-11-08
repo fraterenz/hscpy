@@ -128,7 +128,7 @@ def plot_sfs_cdf(
             u_values, v_values, u_weights, v_weights
         )
         label = (
-            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"simulation"
+            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"best fit"
         )
 
         axes[0].loglog(
