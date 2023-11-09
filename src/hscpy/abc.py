@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from futils import snapshot
 from hscpy.figures import AgeSims
 
-from hscpy.sfs import RealisationSfs, process_sfs
+from hscpy.realisation import RealisationSfs, process_sfs
 
 
 def get_values_weights_from_sfs(
