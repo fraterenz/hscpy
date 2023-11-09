@@ -152,9 +152,9 @@ def plot_sfs_cdf(
             linestyle="--",
             label=label,
         )
-    axes[0].set_ylabel("nb of mutants", size="x-large")
-    axes[1].set_ylabel("cdf", size="x-large")
-    axes[1].set_xlabel("nb of cells", size="x-large")
+    axes[0].set_ylabel("nb of mutants", size="small")
+    axes[1].set_ylabel("cdf", size="small")
+    axes[1].set_xlabel("nb of cells", size="small")
 
     tick_width = 1.1
     for ax_ in axes:
@@ -164,8 +164,8 @@ def plot_sfs_cdf(
     ax3.legend(
         *axes[0].get_legend_handles_labels(),
         title=f"{age:.0f} years",
-        #fontsize="large",
-        #title_fontsize="x-large",
+        fontsize="small",
+        title_fontsize="small",
         loc=6,
         frameon=False,
     )

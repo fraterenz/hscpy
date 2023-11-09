@@ -43,9 +43,9 @@ def plot_results(
         ax=g.ax_joint,
     )
     label = ax.get_ylabel()
-    ax.set_ylabel(mapping.get(label, label), fontsize="xx-large")
+    ax.set_ylabel(mapping.get(label, label))# , fontsize="xx-large")
     label = ax.get_xlabel()
-    ax.set_xlabel(mapping.get(label, label), fontsize="xx-large")
+    ax.set_xlabel(mapping.get(label, label)) #, fontsize="xx-large")
     xlims, ylims = ax.get_xlim(), ax.get_ylim()
     if show_mean:
         ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
@@ -56,16 +56,16 @@ def plot_results(
 
     ax = sns.histplot(x=x, fill=True, linewidth=1.5, ax=g.ax_marg_x, **kwargs1)
     ax.set_xlim(*lim1)
-    ax.set_ylabel(ax.get_ylabel(), fontsize="xx-large")
+    ax.set_ylabel(ax.get_ylabel())#, fontsize="xx-large")
     ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
     ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
 
     ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
     ax.set_ylim(*lim2)
     label = ax.get_xlabel()
-    ax.set_xlabel(ax.get_xlabel(), fontsize="xx-large")
-    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
+    ax.set_xlabel(ax.get_xlabel())#, fontsize="xx-large")
+    ax.tick_params(which="major", bottom=True, top=False, left=True, right=False, width=tick_width, length=5, labelsize=14)
+    ax.tick_params(which="minor", bottom=True, top=False, left=True, right=False, width=tick_width, length=3, labelsize=14)
     return g
 
 
