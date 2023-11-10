@@ -78,14 +78,12 @@ def sfs_summary_statistic_wasserstein_timepoint(
 
 
 def filter_per_timepoint(
-        summary: pd.DataFrame, quantile: float, metric: str, verbose: bool
+    summary: pd.DataFrame, quantile: float, metric: str, verbose: bool
 ) -> pd.DataFrame:
     accepted = []
     for t in summary.timepoint.unique():
         df = summary.loc[summary.timepoint == t, [metric, "idx", "timepoint"]]
-        kept = df.loc[
-            df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]
-        ]
+        kept = df.loc[df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]]
         accepted.append(kept)
         if verbose:
             print(f"{len(kept)} runs accepted for timepoint {t} with metric {metric}")
@@ -130,7 +128,7 @@ class AbcResults:
         return list(self.accepted.idx.unique())
 
 
-def run_abc(
+def run_abc_multiple_timepoints(
     summary: pd.DataFrame,
     quantile: float,
     minimum_timepoints: int,

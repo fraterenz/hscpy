@@ -43,9 +43,9 @@ def plot_results(
         ax=g.ax_joint,
     )
     label = ax.get_ylabel()
-    ax.set_ylabel(mapping.get(label, label))# , fontsize="xx-large")
+    ax.set_ylabel(mapping.get(label, label))  # , fontsize="xx-large")
     label = ax.get_xlabel()
-    ax.set_xlabel(mapping.get(label, label)) #, fontsize="xx-large")
+    ax.set_xlabel(mapping.get(label, label))  # , fontsize="xx-large")
     xlims, ylims = ax.get_xlim(), ax.get_ylim()
     if show_mean:
         ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
@@ -56,16 +56,34 @@ def plot_results(
 
     ax = sns.histplot(x=x, fill=True, linewidth=1.5, ax=g.ax_marg_x, **kwargs1)
     ax.set_xlim(*lim1)
-    ax.set_ylabel(ax.get_ylabel())#, fontsize="xx-large")
+    ax.set_ylabel(ax.get_ylabel())  # , fontsize="xx-large")
     ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
     ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
 
     ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
     ax.set_ylim(*lim2)
     label = ax.get_xlabel()
-    ax.set_xlabel(ax.get_xlabel())#, fontsize="xx-large")
-    ax.tick_params(which="major", bottom=True, top=False, left=True, right=False, width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which="minor", bottom=True, top=False, left=True, right=False, width=tick_width, length=3, labelsize=14)
+    ax.set_xlabel(ax.get_xlabel())  # , fontsize="xx-large")
+    ax.tick_params(
+        which="major",
+        bottom=True,
+        top=False,
+        left=True,
+        right=False,
+        width=tick_width,
+        length=5,
+        labelsize=14,
+    )
+    ax.tick_params(
+        which="minor",
+        bottom=True,
+        top=False,
+        left=True,
+        right=False,
+        width=tick_width,
+        length=3,
+        labelsize=14,
+    )
     return g
 
 
@@ -119,7 +137,9 @@ def run_abc_filtering_on_clones(
     tot_runs = df.age.unique().shape[0]
     minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
     print(f"{minimum_runs} vs {tot_runs}")
-    idx_abc = abc.run_abc(view, thresholds.quantile, minimum_runs, verbose=verbose)
+    idx_abc = abc.run_abc_multiple_timepoints(
+        view, thresholds.quantile, minimum_runs, verbose=verbose
+    )
     g1, g2, g3 = plot_posteriors(idx_abc, view, show_mean)
     return idx_abc, g1, g2, g3
 
