@@ -88,20 +88,16 @@ def plot_results(
 
 
 def plot_posteriors(
-    abc_results: abc.AbcResults, abc_summary: pd.DataFrame, show_mean: bool
+    results: pd.DataFrame, show_mean: bool, mu_lims: Tuple[float, float], s_lims: Tuple[float, float], std_lims: Tuple[float, float]
 ):
-    results = abc_summary.loc[
-        abc_summary.idx.isin(abc_results.get_idx()), ["mu", "s", "std"]
-    ].drop_duplicates()
-
-    priors = abc_summary[["mu", "u", "s", "std"]].drop_duplicates()
+    results = results[["mu", "s", "std"]].drop_duplicates()
 
     print(f"plotting {results.shape[0]} runs")
     g_mu_s = plot_results(
         results,
         ["mu", "s"],
-        [0, lims(priors, "mu")[1]],
-        [0, lims(priors, "s")[1]],
+        mu_lims,
+        s_lims,
         {"discrete": True},
         {"binwidth": 0.01},
         show_mean,
@@ -110,8 +106,8 @@ def plot_posteriors(
     g_mu_std = plot_results(
         results,
         ["mu", "std"],
-        [0, lims(priors, "mu")[1]],
-        [0, lims(priors, "std")[1]],
+        mu_lims,
+        std_lims,
         {"discrete": True},
         {"binwidth": 0.002},
         show_mean,
@@ -120,8 +116,8 @@ def plot_posteriors(
     g_s_std = plot_results(
         results,
         ["s", "std"],
-        [0, lims(priors, "s")[1]],
-        [0, lims(priors, "std")[1]],
+        s_lims,
+        std_lims,
         {"binwidth": 0.01},
         {"binwidth": 0.002},
         show_mean,
