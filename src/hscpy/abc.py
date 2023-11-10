@@ -88,7 +88,7 @@ def summary_statistic_relative_diff_clones(summary: pd.DataFrame) -> pd.DataFram
 
 def filter_run(summary_t: pd.DataFrame, quantile: float, metric: str) -> pd.DataFrame:
     df = summary_t[[metric, "idx", "timepoint"]]
-    kept = df.loc[df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]]
+    kept = df.loc[df[metric] <= df[metric].quantile(quantile), ["idx", "timepoint"]]
     kept["metric"] = metric
     return kept
 
