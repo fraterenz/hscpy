@@ -129,21 +129,6 @@ def plot_posteriors(
     return g_mu_s, g_mu_std, g_s_std
 
 
-def run_abc_filtering_on_clones(
-    df, thresholds: abc.AbcThresholds, show_mean: bool = False, verbose: bool = True
-):
-    idx_abc = dict()
-    view = df[df["clones diff"] <= thresholds.nb_clones_diff]
-    tot_runs = df.age.unique().shape[0]
-    minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
-    print(f"{minimum_runs} vs {tot_runs}")
-    idx_abc = abc.run_abc_multiple_timepoints(
-        view, thresholds.quantile, minimum_runs, verbose=verbose
-    )
-    g1, g2, g3 = plot_posteriors(idx_abc, view, show_mean)
-    return idx_abc, g1, g2, g3
-
-
 def get_idx_smaller_distance_clones_from_results(
     abc_summary: pd.DataFrame, abc_results: abc.AbcResults
 ) -> int:
@@ -167,6 +152,7 @@ def abc_simulated_validation(
     thresholds: abc.AbcThresholds,
     show_priors: bool = True,
 ):
+    assert False, "TODO"
     target_sfs_simulated = {
         t: sfs_.sfs
         for t, sfs_donor in sfs_sims.items()

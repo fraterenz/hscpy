@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 from matplotlib import colors
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -77,13 +77,32 @@ def sfs_summary_statistic_wasserstein_timepoint(
     return all_params
 
 
+def summary_statistic_relative_diff_clones(summary: pd.DataFrame) -> pd.DataFrame:
+    summary["rel clones diff"] = np.where(
+        summary["clones"] == 0,
+        summary["clones diff"],
+        summary["clones diff"] / summary["clones"],
+    )
+    return summary
+
+
+def filter_run(summary_t: pd.DataFrame, quantile: float, metric: str) -> pd.DataFrame:
+    df = summary_t[[metric, "idx", "timepoint"]]
+    kept = df.loc[df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]]
+    kept["metric"] = metric
+    return kept
+
+
 def filter_per_timepoint(
     summary: pd.DataFrame, quantile: float, metric: str, verbose: bool
 ) -> pd.DataFrame:
     accepted = []
     for t in summary.timepoint.unique():
-        df = summary.loc[summary.timepoint == t, [metric, "idx", "timepoint"]]
-        kept = df.loc[df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]]
+        kept = filter_run(
+            summary.loc[summary.timepoint == t, :],
+            quantile,
+            metric,
+        )
         accepted.append(kept)
         if verbose:
             print(f"{len(kept)} runs accepted for timepoint {t} with metric {metric}")
@@ -101,46 +120,47 @@ class AbcResults:
     def __init__(
         self,
         accepted: pd.DataFrame,
-        accepted_quantile: pd.DataFrame,
         quantile: float,
-        minimum_timepoints: int,
+        metric: str,
     ) -> None:
-        """The DataFrames with two columns:
+        """The DataFrames with 3 columns:
         - the id of the accepted runs
         - the timepoint (age) at which the run has been accepted
+        - the metric used to perform the filtering
 
         To get a unique list of idx independently of the timepoints, run `get_idx`.
 
-        `accepted_quantile`: are all the runs that meet the quantile threshold
-        `accepted`: are all the runs that meet both the quantile and the
-        timepoint threshold
+        `accepted`: are all the runs that meet the quantile threshold per timepoint
         """
         assert quantile <= 1, f"found quantile greater than 1: {quantile}"
-        assert accepted_quantile.shape[0] >= accepted.shape[0]
         # all the runs that meet the quantile threshold
-        self.accepted_quantile = accepted_quantile
-        # all the runs that meet both the quantile and the timepoint threshold
         self.accepted = accepted
         self.quantile = quantile
-        self.minimum_timepoints = minimum_timepoints
+        self.metric = metric
 
     def get_idx(self) -> List[int]:
         return list(self.accepted.idx.unique())
 
+    def abc_filter_on_minimum_timepoints(self, minimum_timepoints: int) -> pd.DataFrame:
+        timepoints_accepted = self.accepted.timepoint.unique().shape[0]
+        assert (
+            minimum_timepoints <= timepoints_accepted
+        ), f"minimum_timepoints greater than the timepoints in the accepted runs {minimum_timepoints} vs {timepoints_accepted}"
+        runs2keep = (
+            self.accepted.groupby("idx").count() >= minimum_timepoints
+        ).reset_index()
+        runs2keep = [
+            int(ele)
+            for ele in runs2keep.where(runs2keep.timepoint).dropna().idx.tolist()
+        ]
+        return self.accepted.loc[self.accepted.idx.isin(runs2keep), :]
 
-def run_abc_multiple_timepoints(
+
+def run_abc(
     summary: pd.DataFrame,
     quantile: float,
-    minimum_timepoints: int,
     metric: str,
     verbose: bool = False,
 ) -> AbcResults:
     accepted = filter_per_timepoint(summary, quantile, metric, verbose=verbose)
-    # keep only the runs that have at least `minimum_timepoints` good runs
-    runs2keep = (accepted.groupby("idx").count() >= minimum_timepoints).reset_index()
-    runs2keep = [
-        int(ele) for ele in runs2keep.where(runs2keep.timepoint).dropna().idx.tolist()
-    ]
-    return AbcResults(
-        accepted[accepted.idx.isin(runs2keep)], accepted, quantile, minimum_timepoints
-    )
+    return AbcResults(accepted, quantile, metric)
