@@ -4,6 +4,7 @@ from futils import snapshot
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import numpy as np
 
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
@@ -88,7 +89,11 @@ def plot_results(
 
 
 def plot_posteriors(
-    results: pd.DataFrame, show_mean: bool, mu_lims: Tuple[float, float], s_lims: Tuple[float, float], std_lims: Tuple[float, float]
+    results: pd.DataFrame,
+    show_mean: bool,
+    mu_lims: Tuple[float, float],
+    s_lims: Tuple[float, float],
+    std_lims: Tuple[float, float],
 ):
     results = results[["mu", "s", "std"]].drop_duplicates()
 
@@ -287,3 +292,65 @@ def abc_simulated_validation(
     g3.ax_joint.plot(s_target, std_target, marker="x", color="black", mew=2)
 
     return abc_simulated, g1, g2, g3
+
+
+def run_abc_indep(
+    summary: pd.DataFrame, metric: str, q: float, counts
+) -> List[abc.AbcResults]:
+    results_indep_timepoints = []
+    for t in summary.timepoint.unique():
+        print(
+            f"running ABC with metric {metric} on timepoint {t} with q {q} with value of {summary.loc[summary.timepoint == t, metric].quantile(q):.2f}"
+        )
+
+        res = abc.run_abc(summary[summary.timepoint == t], q, metric, True)
+        (
+            _,
+            _,
+            _,
+        ) = plot_posteriors(
+            summary[summary.idx.isin(res.get_idx())],
+            False,
+            (0, 21),
+            (0, 0.41),
+            (0, 0.11),
+        )
+        plt.show()
+        results_indep_timepoints.append(res)
+
+    fig, ax = plt.subplots(1, 1)
+    view = counts[
+        counts.idx.isin(
+            set([idx for res in results_indep_timepoints for idx in res.get_idx()])
+        )
+    ]
+    sns.lineplot(
+        view,
+        x="age",
+        y="variant counts detected",
+        errorbar=lambda x: (np.min(x), np.max(x)),
+        ax=ax,
+        label="min-max",
+    )
+    sns.lineplot(
+        view,
+        x="age",
+        y="variant counts detected",
+        errorbar="sd",
+        ax=ax,
+        color="orange",
+        label="std",
+    )
+    sns.scatterplot(
+        data=summary[["age", "clones"]].drop_duplicates(),
+        x="age",
+        y="clones",
+        marker="x",
+        linewidths=2,
+        color="purple",
+        label="Mitchell",
+    )
+    ax.legend()
+    plt.show()
+
+    return results_indep_timepoints
