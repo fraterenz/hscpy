@@ -10,7 +10,7 @@ class Parameters:
         path: Path,
         sample: int,
         cells: int,
-        b0: float,
+        r: float,
         mu: float,
         u: float,
         s: float,
@@ -20,7 +20,7 @@ class Parameters:
         self.sample = sample
         self.path = path
         self.cells = cells
-        self.b0 = b0
+        self.r = r
         self.mu = mu
         self.u = u
         self.s = s
@@ -40,7 +40,7 @@ class ParametersFile:
     def __init__(
         self,
         cells: int,
-        b: float,
+        r: float,
         mu: float,
         u: float,
         mean: float,
@@ -48,7 +48,7 @@ class ParametersFile:
         idx: int,
     ):
         self.cells = int(cells)
-        self.b0 = b
+        self.r = r
         self.mu = mu
         self.u = u
         self.s = mean
