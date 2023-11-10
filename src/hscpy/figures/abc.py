@@ -122,6 +122,67 @@ def plot_posteriors(
         {"binwidth": 0.002},
         show_mean,
     )
+    for g_ in {g_mu_s, g_mu_std, g_s_std}:
+        g_.ax_joint.tick_params(
+            which="major",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=5,
+            labelsize=14,
+        )
+        g_.ax_joint.tick_params(
+            which="minor",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=3,
+            labelsize=14,
+        )
+        g_.ax_marg_x.tick_params(
+            which="major",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=3,
+            labelsize=14,
+        )
+        g_.ax_marg_x.tick_params(
+            which="minor",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=3,
+            labelsize=14,
+        )
+        g_.ax_marg_y.tick_params(
+            which="minor",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=3,
+            labelsize=14,
+        )
+        g_.ax_marg_y.tick_params(
+            which="major",
+            bottom=True,
+            top=False,
+            left=True,
+            right=False,
+            width=1.1,
+            length=3,
+            labelsize=14,
+        )
     return g_mu_s, g_mu_std, g_s_std
 
 
