@@ -78,17 +78,17 @@ def sfs_summary_statistic_wasserstein_timepoint(
 
 
 def filter_per_timepoint(
-    summary: pd.DataFrame, quantile: float, verbose: bool
+        summary: pd.DataFrame, quantile: float, metric: str, verbose: bool
 ) -> pd.DataFrame:
     accepted = []
     for t in summary.timepoint.unique():
-        df = summary.loc[summary.timepoint == t, ["wasserstein", "idx", "timepoint"]]
+        df = summary.loc[summary.timepoint == t, [metric, "idx", "timepoint"]]
         kept = df.loc[
-            df.wasserstein < df.wasserstein.quantile(quantile), ["idx", "timepoint"]
+            df[metric] < df[metric].quantile(quantile), ["idx", "timepoint"]
         ]
         accepted.append(kept)
         if verbose:
-            print(f"{len(kept)} runs accepted for timepoint {t}")
+            print(f"{len(kept)} runs accepted for timepoint {t} with metric {metric}")
     return pd.concat(accepted)
 
 
@@ -134,9 +134,10 @@ def run_abc(
     summary: pd.DataFrame,
     quantile: float,
     minimum_timepoints: int,
+    metric: str,
     verbose: bool = False,
 ) -> AbcResults:
-    accepted = filter_per_timepoint(summary, quantile, verbose)
+    accepted = filter_per_timepoint(summary, quantile, metric, verbose=verbose)
     # keep only the runs that have at least `minimum_timepoints` good runs
     runs2keep = (accepted.groupby("idx").count() >= minimum_timepoints).reset_index()
     runs2keep = [
