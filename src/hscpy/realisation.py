@@ -140,15 +140,18 @@ def compute_mean_variance(
 
 
 def plot_burden(burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs):
+    # remove empty entries
+    cleaned = {k: v for k, v in sorted(burden.items()) if v > 0 }
+    
     ax.bar(
-        list(burden.keys()),
-        list(burden.values()),
+        list(cleaned.keys()),
+        list(cleaned.values()),
         color=kwargs["color"],
         alpha=kwargs["alpha"],
         width=1,
     )
-    ymax = kwargs.get("ymax", max(burden.values()))
-    mean, var = compute_mean_variance(burden)
+    ymax = kwargs.get("ymax", max(cleaned.values()))
+    mean, var = compute_mean_variance(cleaned)
     ax.axvline(
         x=mean,
         ymin=0,
