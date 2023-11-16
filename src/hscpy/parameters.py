@@ -10,7 +10,7 @@ class Parameters:
         path: Path,
         sample: int,
         cells: int,
-        r: float,
+        tau: float,
         mu: float,
         u: float,
         s: float,
@@ -20,7 +20,7 @@ class Parameters:
         self.sample = sample
         self.path = path
         self.cells = cells
-        self.r = r
+        self.tau = tau
         self.mu = mu
         self.u = u
         self.s = s
@@ -40,7 +40,7 @@ class ParametersFile:
     def __init__(
         self,
         cells: int,
-        r: float,
+        tau: float,
         mu: float,
         u: float,
         mean: float,
@@ -48,7 +48,7 @@ class ParametersFile:
         idx: int,
     ):
         self.cells = int(cells)
-        self.r = r
+        self.tau = tau
         self.mu = mu
         self.u = u
         self.s = mean
@@ -61,7 +61,7 @@ class ParametersFile:
 
 def parameters_from_path(path: Path) -> Parameters:
     """Assume something like
-    test1/20cells/sfs/0dot0years/13dot26541mu0_0dot3158431053161621u_0dot034741633mean_0dot013301114std_1b0_20cells_270idx.json
+    test1/20cells/sfs/0dot0years/13dot26541mu0_0dot3158431053161621u_0dot034741633mean_0dot013301114std_1tau_20cells_270idx.json
     """
     parts = path.parts
     match_sample = re.compile(r"^(\d+)(cells)$", re.IGNORECASE)
@@ -109,7 +109,7 @@ def params_files_into_dataframe(params: List[ParametersFile]) -> pd.DataFrame:
 
 
 def is_filtered_sim(
-    sim: Path, mu: float, mean: float, std: float, b0: float
+    sim: Path, mu: float, mean: float, std: float, tau: float
 ) -> Tuple[bool, ParametersFile]:
     params = parse_filename_into_parameters(sim)
     my_dict = params.into_dict()
@@ -118,19 +118,19 @@ def is_filtered_sim(
             abs(my_dict["s"] - mean) <= 0.02
             and abs(my_dict["mu"] - mu) <= 0.1
             and abs(my_dict["std"] - std) <= 0.02
-            and abs(my_dict["b0"] - b0) <= 0.1
+            and abs(my_dict["tau"] - tau) <= 0.1
         ),
         params,
     )
 
 
 def get_params_filtered_sim(
-    path2dir: Path, mu: float, mean: float, std: float, b0: float
+    path2dir: Path, mu: float, mean: float, std: float, tau: float
 ) -> List[ParametersFile]:
     params = list()
     for path in path2dir.iterdir():
         for sim in path.glob("*.json"):
-            is_ok, param = is_filtered_sim(sim, mu, mean, std, b0)
+            is_ok, param = is_filtered_sim(sim, mu, mean, std, tau)
             if is_ok:
                 params.append(param)
         break
@@ -142,8 +142,8 @@ def filter_simulations(
     mu: float,
     mean: float,
     std: float,
-    b0: float,
+    tau: float,
 ) -> pd.DataFrame:
     return params_files_into_dataframe(
-        get_params_filtered_sim(path2dir, mu, mean, std, b0)
+        get_params_filtered_sim(path2dir, mu, mean, std, tau)
     )
