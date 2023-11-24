@@ -3,22 +3,36 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from pathlib import Path
 from typing import Dict, List, Set
-
-from futils import snapshot
+from math import ceil
 from scipy import stats
-from hscpy import realisation
+from futils import snapshot
 
+from hscpy import realisation
 from hscpy.figures import AgeSims, PlotOptions
+
+
+class ToCellFrequency:
+    def __init__(self, sample_size: int, to_one: bool) -> None:
+        self.nb_cells = sample_size
+        self.to_one = to_one
 
 
 def plot_sfs_avg_unormalised(
     ax,
     my_sfs: List[snapshot.Histogram],
     options_plot: PlotOptions,
+    normalise_x: ToCellFrequency | None,
     **kwargs,
 ):
     pooled = snapshot.Uniformise.pooled_histogram(my_sfs)
-    ax = plot_sfs(ax, pooled, normalise=False, options=options_plot, **kwargs)
+    ax = plot_sfs(
+        ax,
+        pooled,
+        normalise=False,
+        normalise_x=normalise_x,
+        options=options_plot,
+        **kwargs,
+    )
     return ax
 
 
@@ -26,10 +40,18 @@ def plot_sfs_avg(
     ax,
     my_sfs: List[snapshot.Histogram],
     options_plot: PlotOptions,
+    normalise_x: ToCellFrequency | None,
     **kwargs,
 ):
     pooled = snapshot.Uniformise.pooled_distribution(my_sfs)
-    ax = plot_sfs(ax, pooled, normalise=True, options=options_plot, **kwargs)
+    ax = plot_sfs(
+        ax,
+        pooled,
+        normalise=True,
+        options=options_plot,
+        normalise_x=normalise_x,
+        **kwargs,
+    )
     return ax
 
 
@@ -38,24 +60,33 @@ def plot_sfs(
     my_sfs: snapshot.Histogram | snapshot.Distribution,
     normalise: bool,
     options: PlotOptions,
+    normalise_x: ToCellFrequency | None = None,
     **kwargs,
 ):
     """This modifies the sfs by removing the entry at 0"""
     my_sfs.pop(0, 0)
     jmuts = list(my_sfs.values())
+    jcells = list(my_sfs.keys())
     if normalise:
         max_ = max(jmuts)
         jmuts = [ele / max_ for ele in jmuts]
-    jcells = list(my_sfs.keys())
+    if normalise_x:
+        # dividing by 2 the number of cells to get a max freq of 1 (or higher
+        # when using bulk sequencing)
+        max_ = (
+            normalise_x.nb_cells
+            if not normalise_x.to_one
+            else ceil(normalise_x.nb_cells / 2)
+        )
+        jcells = [ele / max_ for ele in jcells]
     ax.plot(jcells, jmuts, **kwargs)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_ylabel(
         "density of variants" if normalise else "number of variants",
-        # fontsize="xx-large",
     )
-    ax.set_xlabel("number of cells")#, fontsize="xx-large")
-    ax.tick_params(axis="both", which="both") #labelsize=14)
+    ax.set_xlabel("density of cells" if normalise_x else "number of cells")
+    ax.tick_params(axis="both", which="both")
     return ax
 
 
@@ -64,9 +95,17 @@ def plot_sfs_sim_with_id(
     my_sfs: snapshot.Histogram,
     normalise: bool,
     options: PlotOptions,
+    normalise_x: ToCellFrequency | None,
     **kwargs,
 ):
-    return plot_sfs(ax, my_sfs, normalise=normalise, options=options, **kwargs)
+    return plot_sfs(
+        ax,
+        my_sfs,
+        normalise=normalise,
+        normalise_x=normalise_x,
+        options=options,
+        **kwargs,
+    )
 
 
 def plot_sfs_correction(
@@ -74,13 +113,14 @@ def plot_sfs_correction(
     correction: realisation.CorrectedVariants,
     normalise: bool,
     options: PlotOptions,
+    normalise_x: ToCellFrequency | None,
     **kwargs,
 ):
     cells = correction.corrected_variants.shape[0]
     x = correction.frequencies[:cells]
     f_sampled = correction.corrected_variants
     my_sfs = snapshot.Histogram({xx: f for xx, f in zip(x, f_sampled)})
-    return plot_sfs(ax, my_sfs, normalise, options, **kwargs)
+    return plot_sfs(ax, my_sfs, normalise, options, normalise_x, **kwargs)
 
 
 def plot_sfs_cdf(
@@ -127,9 +167,7 @@ def plot_sfs_cdf(
         wasserstein_scipy = stats.wasserstein_distance(
             u_values, v_values, u_weights, v_weights
         )
-        label = (
-            f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"best fit"
-        )
+        label = f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"best fit"
 
         axes[0].loglog(
             [10**ele for ele in sim.keys()],
