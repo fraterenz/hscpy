@@ -11,6 +11,33 @@ from hscpy.figures import AgeSims
 
 from hscpy.realisation import RealisationSfs, process_sfs
 
+def sfs_summary_statistic_ks(
+    sims: Dict[AgeSims, List[RealisationSfs]],
+    target: Dict[AgeSims, snapshot.Histogram],
+    target_name: str,
+) -> pd.DataFrame:
+    """
+    Return a list of records (list of dict) with the summary statistics and
+    other quantities such as the parameters used.
+    We compute the cumulative distribution function (cdf) for all the SFS from
+    the simulations `sims` and compare that against the cdf of simulations' SFS
+    `sims`.
+    `target` and `sims` must have the same keys, keys being the timepoint considered.
+    """
+    abc_results = []
+
+    for age_sim, sfs_sim in sims.items():
+        data1 = np.log10(snapshot.array_from_hist(target[age_sim]))
+        for my_sfs in sfs_sim:
+            data2 = np.log10(snapshot.array_from_hist(my_sfs.sfs))
+            params = my_sfs.parameters.into_dict()
+            params["ks"] = stats.ks_2samp(data1, data2).statistic
+            params["donor_name"] = target_name
+            params["timepoint"] = age_sim
+            abc_results.append(params)
+
+    return pd.DataFrame.from_records(abc_results)
+
 
 def get_values_weights_from_sfs(
     sfs_: snapshot.Histogram,
