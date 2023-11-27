@@ -173,7 +173,20 @@ def run_abc(
     metric: str,
     verbose: bool = False,
 ) -> AbcResults:
-    accepted = filter_run(summary, quantile, metric)
+    accepted = filter_per_timepoint(summary, quantile, metric)
+    if verbose:
+        print(f"{accepted.shape[0]} runs accepted with metric {metric}")
+    return AbcResults(accepted, quantile, metric)
+
+
+def run_abc_per_single_timepoint(
+    summary: pd.DataFrame,
+    timepoint: float,
+    quantile: float,
+    metric: str,
+    verbose: bool = False,
+) -> AbcResults:
+    accepted = filter_run(summary[summary.age == timepoint], quantile, metric)
     if verbose:
         print(f"{accepted.shape[0]} runs accepted with metric {metric}")
     return AbcResults(accepted, quantile, metric)
