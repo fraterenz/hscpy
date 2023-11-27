@@ -191,8 +191,8 @@ def plot_posteriors(
     return g_mu_s, g_mu_std, g_s_std
 
 
-def get_idx_smaller_distance_clones_from_results(
-    abc_summary: pd.DataFrame, abc_results: abc.AbcResults
+def get_idx_smaller_distance_clones_idx(
+    abc_summary: pd.DataFrame, idx: List[int]
 ) -> int:
     """From all runs accepted by ABC, get the index of the run with the minimal
     distance between the number of clones (likely all the runs with a number of
@@ -200,7 +200,7 @@ def get_idx_smaller_distance_clones_from_results(
     Then, among this subset of runs, take the idx of the run with the smaller
     wasserstein distance.
     """
-    view = abc_summary[abc_summary.idx.isin(abc_results.get_idx())]
+    view = abc_summary[abc_summary.idx.isin(idx)]
     second_view = view[view["clones diff"] == view["clones diff"].min()]
     return second_view.loc[
         second_view.wasserstein == second_view.wasserstein.min(), "idx"
