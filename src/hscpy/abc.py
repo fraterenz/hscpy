@@ -37,9 +37,8 @@ def sfs_summary_statistic_wasserstein(
     abc_results = []
 
     for age_sim, sfs_sim in sims.items():
-        v_values, v_weights = get_values_weights_from_sfs(target[age_sim])
         params = sfs_summary_statistic_wasserstein_timepoint(
-            sfs_sim, v_values, v_weights, target_name, age_sim
+            sfs_sim, target[age_sim], target_name, age_sim
         )
 
         abc_results.extend(params)
@@ -49,8 +48,7 @@ def sfs_summary_statistic_wasserstein(
 
 def sfs_summary_statistic_wasserstein_timepoint(
     sims: List[RealisationSfs],
-    v_values: List[float],
-    v_weights: List[float],
+    target: snapshot.Histogram,
     target_name: str,
     age: int | float,
 ):
@@ -64,7 +62,14 @@ def sfs_summary_statistic_wasserstein_timepoint(
     all_params = []
 
     for i, my_sfs in enumerate(sims):
-        u_values, u_weights = get_values_weights_from_sfs(my_sfs.sfs)
+        # uniformise such that they have the same support which is required by
+        # the wasserstein metric
+        target_uniformised, sim_uniformised = snapshot.Uniformise.uniformise_histograms(
+            [target, my_sfs.sfs]
+        ).make_histograms()
+        assert len(target_uniformised) == len(sim_uniformised)
+        v_values, v_weights = get_values_weights_from_sfs(target_uniformised)
+        u_values, u_weights = get_values_weights_from_sfs(sim_uniformised)
         params = my_sfs.parameters.into_dict()
         # compute the summary statistic
         params["wasserstein"] = stats.wasserstein_distance(
