@@ -173,7 +173,7 @@ def run_abc(
     metric: str,
     verbose: bool = False,
 ) -> AbcResults:
-    accepted = filter_per_timepoint(summary, quantile, metric)
+    accepted = filter_per_timepoint(summary, quantile, metric, verbose)
     if verbose:
         print(f"{accepted.shape[0]} runs accepted with metric {metric}")
     return AbcResults(accepted, quantile, metric)
