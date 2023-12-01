@@ -30,7 +30,7 @@ def plot_results(
     kwargs2,
     show_mean: bool,
 ):
-    mapping = {"mu": r"$\mu$", "std": r"$\sigma$"}
+    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$"}
     assert len(pair2plot) == 2
     tick_width = 1.1
 
