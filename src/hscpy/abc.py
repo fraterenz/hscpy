@@ -46,7 +46,7 @@ def get_values_weights_from_sfs(
         snapshot.Histogram(sfs_), normalise=False, log_transform=True
     )
     # bias the sfs: when there is one cell, act like if there were 2 cells
-    sfs_processed = {k: np.log10(2) if val == 0 else val for k, val in sfs_processed.items()}
+    sfs_processed = {k: np.log10(2) if val == 1 else val for k, val in sfs_processed.items()}
     # remove -inf values: replace -inf by 0 (all the other 0s have been 
     # transformed in the previous step
     sfs_processed = {k: 0 if np.isneginf(val) else val for k, val in sfs_processed.items()}
