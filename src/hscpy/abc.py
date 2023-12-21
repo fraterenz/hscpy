@@ -45,7 +45,7 @@ def get_values_weights_from_sfs(
 ) -> Tuple[List[float], List[float]]:
     sfs_.pop(0, 0)
     cdf = stats.ecdf(snapshot.array_from_hist(sfs_))
-    return cdf.cdf.quantiles.tolist(), -np.log10(cdf.cdf.probabilities).tolist()
+    return cdf.cdf.quantiles.tolist(), (-np.log10(cdf.cdf.probabilities)).tolist()
 
 
 def sfs_summary_statistic_wasserstein(
@@ -89,14 +89,9 @@ def sfs_summary_statistic_wasserstein_timepoint(
     all_params = []
 
     for i, my_sfs in enumerate(sims):
-        # uniformise such that they have the same support which is required by
-        # the wasserstein metric
-        target_uniformised, sim_uniformised = snapshot.Uniformise.uniformise_histograms(
-            [target, my_sfs.sfs]
-        ).make_histograms()
-        assert len(target_uniformised) == len(sim_uniformised)
-        v_values, v_weights = get_values_weights_from_sfs(target_uniformised)
-        u_values, u_weights = get_values_weights_from_sfs(sim_uniformised)
+        v_values, v_weights = get_values_weights_from_sfs(target)
+        u_values, u_weights = get_values_weights_from_sfs(my_sfs.sfs)
+        # assert len(u_values) == len(v_values), f"{len(u_values)} vs {len(v_values)}"
         params = my_sfs.parameters.into_dict()
         # compute the summary statistic
         params["wasserstein"] = stats.wasserstein_distance(
