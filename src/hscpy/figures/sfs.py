@@ -1,5 +1,6 @@
 import random
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import ticker
 from pathlib import Path
 from typing import Dict, List, Set
@@ -9,6 +10,27 @@ from futils import snapshot
 
 from hscpy import realisation
 from hscpy.figures import AgeSims, PlotOptions
+
+
+def process_sfs(
+    my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
+) -> Dict[AgeSims, float]:
+    """This modifies the sfs by removing the entry at 0 and log10 transform the
+    jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
+    `True`.
+
+    Normalise means normalise the y axis by dividing all entries by the maximal
+    value found on the yaxis.
+    """
+    my_sfs.pop(0, 0)
+    jmuts = list(my_sfs.values())
+    if normalise:
+        max_ = max(jmuts)
+        jmuts = [ele / max_ for ele in jmuts]
+    jcells = [np.log10(k) for k in my_sfs.keys()]
+    if log_transform:
+        jmuts = [np.log10(val) for val in jmuts]
+    return {AgeSims(k): float(val) for k, val in zip(jcells, jmuts)}
 
 
 class ToCellFrequency:
@@ -139,9 +161,7 @@ def plot_sfs_cdf(
     axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
     ax3 = subfigs[1].subplots(1, 1)
 
-    target_processed = realisation.process_sfs(
-        target, normalise=False, log_transform=True
-    )
+    target_processed = process_sfs(target, normalise=False, log_transform=True)
     u_values, u_weights = list(target_processed.keys()), list(target_processed.values())
 
     axes[0].plot(
@@ -162,7 +182,7 @@ def plot_sfs_cdf(
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 
-        sim = realisation.process_sfs(run.sfs, normalise=False, log_transform=True)
+        sim = process_sfs(run.sfs, normalise=False, log_transform=True)
         v_values, v_weights = list(sim.keys()), list(sim.values())
         wasserstein_scipy = stats.wasserstein_distance(
             u_values, v_values, u_weights, v_weights

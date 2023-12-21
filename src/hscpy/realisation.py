@@ -38,27 +38,6 @@ def cdf_from_dict(my_dict: Dict[AgeSims, float]) -> Tuple[np.ndarray, np.ndarray
     return np.array(list(ordered_distr.keys())), probs
 
 
-def process_sfs(
-    my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
-) -> Dict[AgeSims, float]:
-    """This modifies the sfs by removing the entry at 0 and log10 transform the
-    jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
-    `True`.
-
-    Normalise means normalise the y axis by dividing all entries by the maximal
-    value found on the yaxis.
-    """
-    my_sfs.pop(0, 0)
-    jmuts = list(my_sfs.values())
-    if normalise:
-        max_ = max(jmuts)
-        jmuts = [ele / max_ for ele in jmuts]
-    jcells = [np.log10(k) for k in my_sfs.keys()]
-    if log_transform:
-        jmuts = [np.log10(val) for val in jmuts]
-    return {AgeSims(k): float(val) for k, val in zip(jcells, jmuts)}
-
-
 class Correction(StrEnum):
     ONE_OVER_F = auto()
     ONE_OVER_F_SQUARED = auto()
@@ -141,8 +120,8 @@ def compute_mean_variance(
 
 def plot_burden(burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs):
     # remove empty entries
-    cleaned = {k: v for k, v in sorted(burden.items()) if v > 0 }
-    
+    cleaned = {k: v for k, v in sorted(burden.items()) if v > 0}
+
     ax.bar(
         list(cleaned.keys()),
         list(cleaned.values()),

@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from futils import snapshot
 from hscpy.figures import AgeSims
 
-from hscpy.realisation import RealisationSfs, process_sfs
+from hscpy.realisation import RealisationSfs
+
 
 def sfs_summary_statistic_ks(
     sims: Dict[AgeSims, List[RealisationSfs]],
