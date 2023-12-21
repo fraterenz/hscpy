@@ -51,8 +51,8 @@ def load_and_process_mitchell(path2sims: Path, drop_donor_KX007: bool) -> Mitche
 
 
 def sfs_donor_mitchell(
-    name: str, path2mitchell: Path, remove_indels: bool
-) -> snapshot.Histogram:
+    name: str, age: int, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, int, int, snapshot.Histogram]:
     if remove_indels:
         filtered_matrix = filter_mutations(
             *load_patient(
@@ -68,11 +68,12 @@ def sfs_donor_mitchell(
             path2mitchell / f"mutMatrix{name}.csv",
             path2mitchell / f"mutType{name}.csv",
         )[0]
-
+    
+    cells = filtered_matrix.shape[1]
     sfs_donor = filtered_matrix.sum(axis=1).value_counts()
     sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
     my_sfs = snapshot.histogram_from_dict(
         {x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())}
     )
-    return my_sfs
+    return (name, age, cells, my_sfs)
