@@ -36,11 +36,9 @@ def plot_results(
 
     g = sns.JointGrid(ratio=2, marginal_ticks=True)
     x, y = selected[pair2plot[0]], selected[pair2plot[1]]
-    ax = sns.scatterplot(
+    ax = sns.histplot(
         x=x,
         y=y,
-        marker="o",
-        s=100,
         ax=g.ax_joint,
     )
     label = ax.get_ylabel()
