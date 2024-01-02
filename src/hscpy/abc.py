@@ -44,8 +44,11 @@ def get_values_weights_from_sfs(
     sfs_: snapshot.Histogram,
 ) -> Tuple[List[float], List[float]]:
     sfs_.pop(0, 0)
-    cdf = stats.ecdf(snapshot.array_from_hist(sfs_))
-    return cdf.cdf.quantiles.tolist(), (-np.log10(cdf.cdf.probabilities)).tolist()
+    # we dont use the log scale transf anymore because it
+    # takes ages to run snapshot.array_from_hist(sfs)
+    # cdf = stats.ecdf(snapshot.array_from_hist(sfs_))
+    # return cdf.cdf.quantiles.tolist(), (-np.log10(cdf.cdf.probabilities)).tolist()
+    return list(sfs_.keys()), list(sfs_.values())
 
 
 def sfs_summary_statistic_wasserstein(
@@ -54,11 +57,19 @@ def sfs_summary_statistic_wasserstein(
     target_name: str,
 ) -> pd.DataFrame:
     """
+    Compute the wasserstein distance between the simulated SFS in `sims` and
+    the target SFS in `target`.
+    We use the scipy function `stats.wasserstein_distance` with the values being the 
+    x-axis of the SFS (nb of cells with j muts) and the weights being the y-axis of the 
+    SFS (the nb of j muts), see 
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html
+
+    The only processing step we take before computing the SFS is to remove the entry 0 when
+    present, we don't log-transform anymore because it took time to transform the dict
+    into an array, see `get_values_weigths_from_sfs`.
+
     Return a list of records (list of dict) with the summary statistics and
     other quantities such as the parameters used.
-    We compute the cumulative distribution function (cdf) for all the SFS from
-    the simulations `sims` and compare that against the cdf of simulations' SFS
-    `sims`.
     `target` and `sims` must have the same keys, keys being the timepoint considered.
     """
     abc_results = []
