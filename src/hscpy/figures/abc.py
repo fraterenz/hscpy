@@ -22,68 +22,43 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 
 
 def plot_results(
-    selected: pd.DataFrame,
-    pair2plot: List[str],
-    lim1,
-    lim2,
-    kwargs1,
-    kwargs2,
-    show_mean: bool,
-):
-    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$"}
-    assert len(pair2plot) == 2
-    tick_width = 1.1
+    results: pd.DataFrame, x: str, y: str, xbins: np.ndarray, ybins: np.ndarray
+) -> Dict:
+    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$", "s": r"$s$"}
 
-    g = sns.JointGrid(ratio=2, marginal_ticks=True)
-    x, y = selected[pair2plot[0]], selected[pair2plot[1]]
-    ax = sns.histplot(
-        x=x,
-        y=y,
-        ax=g.ax_joint,
-    )
-    label = ax.get_ylabel()
-    ax.set_ylabel(mapping.get(label, label))  # , fontsize="xx-large")
-    label = ax.get_xlabel()
-    ax.set_xlabel(mapping.get(label, label))  # , fontsize="xx-large")
-    xlims, ylims = ax.get_xlim(), ax.get_ylim()
-    if show_mean:
-        ax.hlines(y.mean(), xmin=xlims[0], xmax=xlims[1], linestyle="--", color="red")
-        ax.vlines(x.mean(), ymin=ylims[0], ymax=ylims[1], linestyle="--", color="red")
-    ax.minorticks_on()
-    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
+    xlims = [xbins.min() - (xbins[1] - xbins[0]), xbins.max() + (xbins[1] - xbins[0])]
+    ylims = [ybins.min() - (ybins[1] - ybins[0]), ybins.max() + (ybins[1] - ybins[0])]
 
-    ax = sns.histplot(x=x, fill=True, linewidth=1.5, ax=g.ax_marg_x, **kwargs1)
-    ax.set_xlim(*lim1)
-    ax.set_ylabel(ax.get_ylabel())  # , fontsize="xx-large")
-    ax.tick_params(which="major", width=tick_width, length=5, labelsize=14)
-    ax.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
+    axd = plt.figure(layout="constrained").subplot_mosaic(
+        """
+        A.
+        CD
+        """,
+        # set the height ratios between the rows
+        height_ratios=[1, 3.5],
+        # set the width ratios between the columns
+        width_ratios=[3.5, 1],
+        per_subplot_kw={
+            "A": {"xticklabels": [], "xlim": xlims, "ylabel": "counts"},
+            "C": {
+                "xlim": xlims,
+                "ylim": ylims,
+                "xlabel": mapping.get(x, x),
+                "ylabel": mapping.get(y, x),
+            },
+            "D": {"yticklabels": [], "ylim": ylims, "xlabel": "counts"},
+        },
+    )
 
-    ax = sns.histplot(y=y, fill=True, linewidth=1.5, ax=g.ax_marg_y, **kwargs2)
-    ax.set_ylim(*lim2)
-    label = ax.get_xlabel()
-    ax.set_xlabel(ax.get_xlabel())  # , fontsize="xx-large")
-    ax.tick_params(
-        which="major",
-        bottom=True,
-        top=False,
-        left=True,
-        right=False,
-        width=tick_width,
-        length=5,
-        labelsize=14,
-    )
-    ax.tick_params(
-        which="minor",
-        bottom=True,
-        top=False,
-        left=True,
-        right=False,
-        width=tick_width,
-        length=3,
-        labelsize=14,
-    )
-    return g
+    axd["A"].hist(results[x], bins=xbins, edgecolor="black")
+    axd["D"].hist(results[y], bins=ybins, orientation="horizontal", edgecolor="black")
+    axd["C"].hist2d(x=results[x], y=results[y], bins=[xbins, ybins], cmap="Greys")
+
+    # force lims after hist2d plot
+    axd["C"].set_xlim(xlims)
+    axd["C"].set_ylim(ylims)
+
+    return axd
 
 
 def plot_posteriors(
