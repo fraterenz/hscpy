@@ -24,7 +24,7 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 def plot_results(
     results: pd.DataFrame, x: str, y: str, xbins: np.ndarray, ybins: np.ndarray
 ) -> Dict:
-    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$", "s": r"$s$"}
+    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$", "s": r"$s$", "s_tau": r"$s / \tau$", "std_tau": r"$\sigma / \tau$"}
 
     xlims = [xbins.min() - (xbins[1] - xbins[0]), xbins.max() + (xbins[1] - xbins[0])]
     ylims = [ybins.min() - (ybins[1] - ybins[0]), ybins.max() + (ybins[1] - ybins[0])]
