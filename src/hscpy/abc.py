@@ -12,6 +12,48 @@ from hscpy.figures import AgeSims
 from hscpy.realisation import RealisationSfs
 
 
+def run_abc_sfs_clones(
+    abc_results: pd.DataFrame,
+    quantile_sfs: float,
+    quantile_clones: float,
+    proportion_runs_to_discard: float,
+) -> Set[int]:
+    nb_timepoints = abc_results["sample"].unique().shape[0]
+    minimum_timepoints = int(
+        round(nb_timepoints - nb_timepoints * proportion_runs_to_discard)
+    )
+
+    # run abc with different metrics per each timepoint and keep only the runs
+    # that are accepted at least for minimum timepoints
+    print(
+        f"Running ABC with {minimum_timepoints} minimum timepoints over {nb_timepoints}"
+    )
+
+    wasserstein_idx = set(
+        run_abc(
+            abc_results,
+            quantile=quantile_sfs,
+            metric="wasserstein",
+        )
+        .abc_filter_on_minimum_timepoints(minimum_timepoints)
+        .idx.tolist()
+    )
+    print(f"ABC wasserstein kept {len(wasserstein_idx)} runs")
+
+    clones_idx = set(
+        run_abc(
+            abc_results,
+            quantile=quantile_clones,
+            metric="rel clones diff",
+        )
+        .abc_filter_on_minimum_timepoints(minimum_timepoints)
+        .idx.tolist()
+    )
+    print(f"ABC clones kept {len(clones_idx)} runs")
+
+    return clones_idx.intersection(wasserstein_idx)
+
+
 def sfs_summary_statistic_ks(
     sims: Dict[AgeSims, List[RealisationSfs]],
     target: Dict[AgeSims, snapshot.Histogram],
@@ -59,9 +101,9 @@ def sfs_summary_statistic_wasserstein(
     """
     Compute the wasserstein distance between the simulated SFS in `sims` and
     the target SFS in `target`.
-    We use the scipy function `stats.wasserstein_distance` with the values being the 
-    x-axis of the SFS (nb of cells with j muts) and the weights being the y-axis of the 
-    SFS (the nb of j muts), see 
+    We use the scipy function `stats.wasserstein_distance` with the values being the
+    x-axis of the SFS (nb of cells with j muts) and the weights being the y-axis of the
+    SFS (the nb of j muts), see
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html
 
     The only processing step we take before computing the SFS is to remove the entry 0 when
