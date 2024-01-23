@@ -7,9 +7,37 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from dataclasses import dataclass
 from futils import snapshot
+from hscpy import realisation
 from hscpy.figures import AgeSims
 
 from hscpy.realisation import RealisationSfs
+
+
+def compute_abc_results(
+    target_sfs: Dict[AgeSims, realisation.RealisationSfs],
+    target_clones: pd.DataFrame,
+    sims_sfs: Dict[AgeSims, List[realisation.RealisationSfs]],
+    sims_clones: pd.DataFrame,
+) -> pd.DataFrame:
+    print("wasserstein metric")
+    abc_results = sfs_summary_statistic_wasserstein(
+        sims_sfs,
+        {
+            k: ele.sfs for k, ele in target_sfs.items()
+        },  # ele[-1] means the SFS, k is the age
+        "mitchell",
+    )
+
+    print("clones metric")
+    clones = sims_clones.merge(
+        right=target_clones, on="age", how="left", validate="many_to_one"
+    )
+    abc_results["clones diff"] = (
+        clones["target clones detected"] - sims_clones["variant counts detected"]
+    ).abs()
+    abc_results["clones"] = clones["target clones detected"]
+
+    return summary_statistic_relative_diff_clones(abc_results)
 
 
 def run_abc_sfs_clones(

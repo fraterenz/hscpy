@@ -1,3 +1,4 @@
+import functools
 from pathlib import Path
 from typing import Dict, List, Tuple
 from futils import snapshot
@@ -8,6 +9,88 @@ import numpy as np
 
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
+
+class SyntheticValidation:
+    def __init__( self, idx: int, sims_sfs: Dict[AgeSims, List[realisation.RealisationSfs]], sims_clones: pd.DataFrame):
+        self.target_sfs = {k: sims_sfs[k][idx] for k in sims_sfs.keys()}
+        self.params = self.target_sfs[AgeSims(0.0)].parameters.into_dict()
+
+        print(
+            f"running abc synthetic with ground truth run {idx} with params: {self.params}"
+        )
+
+        target_clones = sims_clones.loc[
+            sims_clones.idx == self.params["idx"], ["age", "variant counts detected", "mu"]
+        ].rename(columns={"variant counts detected": "target clones detected"})
+        assert (self.params["mu"] == target_clones.mu).all()
+        target_clones.drop(columns=["mu"], inplace=True)
+        self.target_clones = target_clones
+
+        abc_mitchell = abc.compute_abc_results(
+            self.target_sfs, self.target_clones, sims_sfs, sims_clones
+        )
+        self.abc = abc_mitchell
+
+    def compute_posteriors(
+        self,
+        quantile_sfs: float = 0.2,
+        quantile_clones: float = 0.2,
+        proprtion_runs_disc: float = 0.2,
+        bins_s: np.ndarray = np.arange(0, 0.44, 0.02),
+        bins_mu: np.ndarray = np.arange(0, 20, 1),
+        bins_tau: np.ndarray = np.arange(0, 5.2, 0.2),
+        bins_std: np.ndarray = np.arange(0, 0.12, 0.01),
+    ):
+    
+        runs2keep = abc.run_abc_sfs_clones(
+            self.abc, quantile_sfs, quantile_clones, proprtion_runs_disc
+        )
+    
+        view_synthetic = self.abc[self.abc.idx.isin(runs2keep)].drop_duplicates(subset="idx")
+        assert not view_synthetic.empty, "empty posterior"
+    
+        print(f"ABC combined kept {len(runs2keep)} runs")
+    
+        gs = []
+    
+        axd = plot_results(view_synthetic, "s", "mu", bins_s, bins_mu)
+        axd["C"].axvline(self.params["s"])
+        axd["C"].axhline(self.params["mu"])
+        gs.append(axd)
+        plt.show()
+    
+        axd = plot_results(view_synthetic, "s", "std", bins_s, bins_std)
+        axd["C"].axvline(self.params["s"])
+        axd["C"].axhline(self.params["std"])
+        gs.append(axd)
+        plt.show()
+    
+        axd = plot_results(view_synthetic, "s", "tau", bins_s, bins_tau)
+        axd["C"].axvline(self.params["s"])
+        axd["C"].axhline(self.params["tau"])
+        gs.append(axd)
+        plt.show()
+    
+        axd = plot_results(view_synthetic, "mu", "tau", bins_mu, bins_tau)
+        axd["C"].axvline(self.params["mu"])
+        axd["C"].axhline(self.params["tau"])
+        gs.append(axd)
+        plt.show()
+    
+        axd = plot_results(view_synthetic, "mu", "std", bins_mu, bins_std)
+        axd["C"].axvline(self.params["mu"])
+        axd["C"].axhline(self.params["std"])
+        gs.append(axd)
+        plt.show()
+    
+        axd = plot_results(view_synthetic, "tau", "std", bins_tau, bins_std)
+        axd["C"].axvline(self.params["tau"])
+        axd["C"].axhline(self.params["std"])
+        gs.append(axd)
+    
+        plt.show()
+    
+        return gs
 
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
@@ -24,7 +107,14 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 def plot_results(
     results: pd.DataFrame, x: str, y: str, xbins: np.ndarray, ybins: np.ndarray
 ) -> Dict:
-    mapping = {"tau": r"$\tau$", "mu": r"$\mu$", "std": r"$\sigma$", "s": r"$s$", "s_tau": r"$s / \tau$", "std_tau": r"$\sigma / \tau$"}
+    mapping = {
+        "tau": r"$\tau$",
+        "mu": r"$\mu$",
+        "std": r"$\sigma$",
+        "s": r"$s$",
+        "s_tau": r"$s / \tau$",
+        "std_tau": r"$\sigma / \tau$",
+    }
 
     xlims = [xbins.min() - (xbins[1] - xbins[0]), xbins.max() + (xbins[1] - xbins[0])]
     ylims = [ybins.min() - (ybins[1] - ybins[0]), ybins.max() + (ybins[1] - ybins[0])]
