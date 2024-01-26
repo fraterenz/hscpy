@@ -40,6 +40,7 @@ class SyntheticValidation:
         bins_mu: np.ndarray = np.arange(0, 20, 1),
         bins_tau: np.ndarray = np.arange(0, 5.2, 0.2),
         bins_std: np.ndarray = np.arange(0, 0.12, 0.01),
+        density: bool = False
     ):
     
         runs2keep = abc.run_abc_sfs_clones(
@@ -53,37 +54,37 @@ class SyntheticValidation:
     
         gs = []
     
-        axd = plot_results(view_synthetic, "s", "mu", bins_s, bins_mu)
+        axd = plot_results(view_synthetic, "s", "mu", bins_s, bins_mu, density=density)
         axd["C"].axvline(self.params["s"])
         axd["C"].axhline(self.params["mu"])
         gs.append(axd)
         plt.show()
     
-        axd = plot_results(view_synthetic, "s", "std", bins_s, bins_std)
+        axd = plot_results(view_synthetic, "s", "std", bins_s, bins_std, density=density)
         axd["C"].axvline(self.params["s"])
         axd["C"].axhline(self.params["std"])
         gs.append(axd)
         plt.show()
     
-        axd = plot_results(view_synthetic, "s", "tau", bins_s, bins_tau)
+        axd = plot_results(view_synthetic, "s", "tau", bins_s, bins_tau, density=density)
         axd["C"].axvline(self.params["s"])
         axd["C"].axhline(self.params["tau"])
         gs.append(axd)
         plt.show()
     
-        axd = plot_results(view_synthetic, "mu", "tau", bins_mu, bins_tau)
+        axd = plot_results(view_synthetic, "mu", "tau", bins_mu, bins_tau, density=density)
         axd["C"].axvline(self.params["mu"])
         axd["C"].axhline(self.params["tau"])
         gs.append(axd)
         plt.show()
     
-        axd = plot_results(view_synthetic, "mu", "std", bins_mu, bins_std)
+        axd = plot_results(view_synthetic, "mu", "std", bins_mu, bins_std, density=density)
         axd["C"].axvline(self.params["mu"])
         axd["C"].axhline(self.params["std"])
         gs.append(axd)
         plt.show()
     
-        axd = plot_results(view_synthetic, "tau", "std", bins_tau, bins_std)
+        axd = plot_results(view_synthetic, "tau", "std", bins_tau, bins_std, density=density)
         axd["C"].axvline(self.params["tau"])
         axd["C"].axhline(self.params["std"])
         gs.append(axd)
@@ -105,7 +106,7 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
 
 
 def plot_results(
-    results: pd.DataFrame, x: str, y: str, xbins: np.ndarray, ybins: np.ndarray
+    results: pd.DataFrame, x: str, y: str, xbins: np.ndarray, ybins: np.ndarray, density: bool = False
 ) -> Dict:
     mapping = {
         "tau": r"$\tau$",
@@ -115,6 +116,8 @@ def plot_results(
         "s_tau": r"$s / \tau$",
         "std_tau": r"$\sigma / \tau$",
     }
+    if density:
+        print("WARNING setting `density=True` is buggy: the yaxis of the top plot seems wrong")
 
     xlims = [xbins.min() - (xbins[1] - xbins[0]), xbins.max() + (xbins[1] - xbins[0])]
     ylims = [ybins.min() - (ybins[1] - ybins[0]), ybins.max() + (ybins[1] - ybins[0])]
@@ -129,19 +132,19 @@ def plot_results(
         # set the width ratios between the columns
         width_ratios=[3.5, 1],
         per_subplot_kw={
-            "A": {"xticklabels": [], "xlim": xlims, "ylabel": "counts"},
+            "A": {"xticklabels": [], "xlim": xlims, "ylabel": "pdf" if density else "counts"},
             "C": {
                 "xlim": xlims,
                 "ylim": ylims,
                 "xlabel": mapping.get(x, x),
                 "ylabel": mapping.get(y, x),
             },
-            "D": {"yticklabels": [], "ylim": ylims, "xlabel": "counts"},
+            "D": {"yticklabels": [], "ylim": ylims, "xlabel": "pdf" if density else "counts"},
         },
     )
 
-    axd["A"].hist(results[x], bins=xbins, edgecolor="black")
-    axd["D"].hist(results[y], bins=ybins, orientation="horizontal", edgecolor="black")
+    axd["A"].hist(results[x], density=density, bins=xbins, edgecolor="black")
+    axd["D"].hist(results[y], bins=ybins, density=density, orientation="horizontal", edgecolor="black")
     axd["C"].hist2d(x=results[x], y=results[y], bins=[xbins, ybins], cmap="Greys")
 
     # force lims after hist2d plot
