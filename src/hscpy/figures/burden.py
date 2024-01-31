@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from hscpy.burden import RealisationBurden
+from hscpy.realisation import RealisationBurden
 
 from hscpy.figures import AgeSims, PlotOptions
 
