@@ -1,7 +1,34 @@
 import re
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
+
+
+# avg between 48.2 and 48.8
+BURDEN_BABIES = 48.5
+# mitchell inference (calibration)
+BURDEN_PER_YEAR = 14
+BURDEN_PER_DIVISION = 1.2
+
+
+def compute_m_exp(cells: int) -> float:
+    return BURDEN_BABIES / (2 * np.log((cells + 1) / 2))
+
+
+def compute_m_background(tau: float) -> float:
+    # 2 because we assume no asymmetric divisions
+    return BURDEN_PER_YEAR - 2 * BURDEN_PER_DIVISION / tau
+
+
+def compute_std_per_division_from_std_per_year(
+    std_per_year: float, tau: float
+) -> float:
+    return std_per_year * tau
+
+
+def compute_s_per_division_from_s_per_year(s_per_year: float, tau: float) -> float:
+    return s_per_year * tau
 
 
 class Parameters:
