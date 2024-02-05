@@ -14,6 +14,12 @@ from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
 
+class Estimate:
+    def __init__(self, point_estimate, credible_interval_95: Tuple[float, float]):
+        self.point_estimate = point_estimate
+        self.credible_interval_95 = credible_interval_95
+
+
 class Gamma:
     def __init__(self, mean, std):
         self.mean = mean
@@ -41,7 +47,7 @@ def plot_posteriors_fancy(
     color,
     fancy: bool,
     legend: bool = False,
-):
+) -> Estimate:
     # https://matplotlib.org/stable/gallery/lines_bars_and_markers/stairs_demo.html
     bin_distance = (bins[1] - bins[0]) / 2
     if fancy:
@@ -80,7 +86,10 @@ def plot_posteriors_fancy(
     ax.set_ylabel("pdf")
     if legend:
         ax.legend()
-    return point_estimate
+
+    return Estimate(
+        point_estimate, (accepted.quantile((0.05)), accepted.quantile(0.95))
+    )
 
 
 def fmt_two_digits(x, pos):
@@ -99,16 +108,16 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     fancy: bool = True,
 ):
     # posteriors
-    point_estimate_eta = plot_posteriors_fancy(
+    estimate_eta = plot_posteriors_fancy(
         posterior.eta, r"$\eta$", bins_eta, fig.axes[2], color, fancy=fancy
     )
-    point_estimate_sigma = plot_posteriors_fancy(
+    estimate_sigma = plot_posteriors_fancy(
         posterior.sigma, r"$\sigma$", bins_sigma, fig.axes[3], color, fancy=fancy
     )
-    _ = plot_posteriors_fancy(
+    estimate_tau = plot_posteriors_fancy(
         posterior.tau, r"$\tau$", bins_tau, fig.axes[4], color, fancy=fancy
     )
-    _ = plot_posteriors_fancy(
+    estimate_mu = plot_posteriors_fancy(
         posterior.mu, r"$\mu$", bins_mu, fig.axes[5], color, fancy=fancy
     )
 
@@ -116,10 +125,10 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     fig.axes[5].set_ylabel("")
 
     # gamma
-    gamma = Gamma(point_estimate_eta, point_estimate_sigma)
+    gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
     gamma.plot(fig.axes[0], label=name, color=color)
 
-    return fig, gamma
+    return fig, gamma, [estimate_eta, estimate_sigma, estimate_tau, estimate_mu]
 
 
 def create_posteriors_grid_eta_sigma_tau_mu():
