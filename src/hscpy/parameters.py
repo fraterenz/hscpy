@@ -13,7 +13,7 @@ BURDEN_PER_DIVISION = 1.2
 
 
 def compute_m_exp(cells: int) -> float:
-    return BURDEN_BABIES / (2 * np.log((cells + 1) / 2))
+    return round(BURDEN_BABIES / (2 * np.log((cells + 1) / 2)), 4)
 
 
 def compute_m_background(tau: float) -> float:
