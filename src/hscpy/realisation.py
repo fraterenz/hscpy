@@ -1,15 +1,72 @@
 from typing import Dict, List, Mapping, Sequence, Set, Tuple, Union
 import numpy as np
 from scipy import stats
-from enum import StrEnum, auto
+from enum import StrEnum, auto, Enum
 from pathlib import Path
 from dataclasses import dataclass
 from futils import snapshot
 from hscpy.figures import AgeSims
-from hscpy.parameters import parameters_from_path, parse_filename_into_parameters
+from hscpy.parameters import (
+    compute_s_per_division_from_s_per_year,
+    compute_std_per_division_from_std_per_year,
+    parameters_from_path,
+    parse_filename_into_parameters,
+    compute_m_background,
+    compute_m_exp,
+)
 from hscpy import load_histogram, parse_path2folder_xdoty_years
 
-from enum import Enum, auto
+
+class SimulationCMD:
+    def __init__(
+        self,
+        cells: int,
+        sample: int,
+        eta: float,
+        sigma: float,
+        mu: int,
+        tau: float,
+        age: int,
+        name: str,
+        exp_phase: bool = True,
+        seed: None | int = None,
+    ):
+        """Write some simulation's parameters into a bash cmd"""
+        self.cells = int(cells)
+        self.eta = eta
+        self.sigma = sigma
+        self.mu = mu
+        self.tau = tau
+        self.age = int(age)
+        self.sample = int(sample)
+        self.name = name
+        self.exp_phase = exp_phase
+        self.seed = seed
+
+    def cmd(self, path2hsc: str, path2save: str) -> str:
+        """Write into a string the bash cmd required to run the simulations.
+
+        path2hsc: string with the path to the executable
+        """
+        exp_cmd = (
+            f"--mu-exp {round(compute_m_exp(self.cells), 5)}" if self.exp_phase else ""
+        )
+        return f"""{path2hsc}
+-c {self.cells}
+-y {self.age + 1}
+-r 1
+--tau {self.tau}
+--mu0 {self.mu}
+{exp_cmd}
+--mu-division 1.2
+--mu-background {round(compute_m_background(self.tau), 5)}
+--mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
+--subsamples {self.sample}
+--snapshots {self.age}
+--seed {self.seed if self.seed else 26}
+--sequential {path2save}""".replace(
+            "\n", " "
+        )
 
 
 class RealisationKind(Enum):
