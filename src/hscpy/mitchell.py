@@ -7,6 +7,20 @@ from typing import Dict, List, NewType, Set, Tuple
 
 Mitchell = NewType("Mitchell", pd.DataFrame)
 
+def donors() -> pd.DataFrame:
+    return pd.DataFrame.from_records(
+        [
+            {"name": "CB001", "age": 0, "cells": 216, "clones": 0},
+            {"name": "CB002", "age": 0, "cells": 390, "clones": 0},
+            {"name": "KX001", "age": 29, "cells": 407, "clones": 0},
+            {"name": "KX002", "age": 38, "cells": 380, "clones": 1},
+            {"name": "SX001", "age": 48, "cells": 362, "clones": 0},
+            {"name": "AX001", "age": 63, "cells": 361, "clones": 1},
+            {"name": "KX008", "age": 76, "cells": 367, "clones": 12},
+            {"name": "KX004", "age": 77, "cells": 451, "clones": 15},
+            {"name": "KX003", "age": 81, "cells": 328, "clones": 13},
+        ]
+    )
 
 def load_patient(
     patient: str, path2matrix: Path, path2type: Path
