@@ -43,16 +43,13 @@ class SimulationCMD:
         self.exp_phase = exp_phase
         self.seed = seed
 
-    def cmd(self, path2hsc: str, path2save: str) -> str:
-        """Write into a string the bash cmd required to run the simulations.
-
-        path2hsc: string with the path to the executable
-        """
+    def parameters(self) -> str:
         exp_cmd = (
             f"--mu-exp {round(compute_m_exp(self.cells), 5)}" if self.exp_phase else ""
         )
-        return f"""{path2hsc}
--c {self.cells}
+        seed_cmd = f"--seed {self.seed}" if self.seed else ""
+
+        return f"""-c {self.cells}
 -y {self.age + 1}
 -r 1
 --tau {self.tau}
@@ -63,10 +60,20 @@ class SimulationCMD:
 --mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
 --subsamples {self.sample}
 --snapshots {self.age}
---seed {self.seed if self.seed else 26}
---sequential {path2save}""".replace(
+{seed_cmd}
+--sequential""".replace(
             "\n", " "
         )
+        
+    def cmd(self, path2hsc: str, path2save: str) -> str:
+        """Write into a string the bash cmd required to run the simulations.
+
+        path2hsc: string with the path to the executable
+        """
+        exp_cmd = (
+            f"--mu-exp {round(compute_m_exp(self.cells), 5)}" if self.exp_phase else ""
+        )
+        return path2hsc.strip() + " " + self.parameters(path2save)
 
 
 class RealisationKind(Enum):
