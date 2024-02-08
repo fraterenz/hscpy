@@ -34,9 +34,8 @@ def process_sfs(
 
 
 class ToCellFrequency:
-    def __init__(self, sample_size: int, to_one: bool) -> None:
+    def __init__(self, sample_size: int) -> None:
         self.nb_cells = sample_size
-        self.to_one = to_one
 
 
 def plot_sfs_avg_unormalised(
@@ -93,14 +92,7 @@ def plot_sfs(
         max_ = max(jmuts)
         jmuts = [ele / max_ for ele in jmuts]
     if normalise_x:
-        # dividing by 2 the number of cells to get a max freq of 1 (or higher
-        # when using bulk sequencing)
-        max_ = (
-            normalise_x.nb_cells
-            if not normalise_x.to_one
-            else ceil(normalise_x.nb_cells / 2)
-        )
-        jcells = [ele / max_ for ele in jcells]
+        jcells = [ele / normalise_x.nb_cells for ele in jcells]
     ax.plot(jcells, jmuts, **kwargs)
     ax.set_xscale("log")
     ax.set_yscale("log")
