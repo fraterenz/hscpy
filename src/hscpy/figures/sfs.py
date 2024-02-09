@@ -1,3 +1,4 @@
+import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,96 @@ from futils import snapshot
 
 from hscpy import realisation
 from hscpy.figures import AgeSims, PlotOptions
+
+
+def plot_ax_sfs_predictions_data_sims(
+    ax,
+    donor: pd.Series,
+    corrected_one_over_1_squared: realisation.CorrectedVariants,
+    sfs_sims_donor: List[realisation.RealisationSfs],
+    mitchell_sfs: snapshot.Histogram,
+    plot_options: PlotOptions,
+    one_over_f_csv: Path | None = None,
+    idx_sim2plot: int | None = None,
+):
+    # 1/f^2 sampled predictions
+    normalisation_x = ToCellFrequency(sample_size=donor.cells)
+    plot_sfs_correction(
+        ax,
+        corrected_one_over_1_squared,
+        normalise=True,
+        options=plot_options,
+        normalise_x=normalisation_x,
+        linestyle="-",
+        color="grey",
+        label=r"$1/f^2$ sampled",
+        linewidth=3,
+    )
+
+    # 1/f sampled predictions from Nate's simulations
+    if one_over_f_csv:
+        one_over_f = pd.read_csv(one_over_f_csv)
+        one_over_f.drop(index=one_over_f[one_over_f["_f"] == 0.0].index, inplace=True)
+        sfs_one_over_f = {
+            cell: muts
+            for cell, muts in zip(
+                (one_over_f["_f"] * normalisation_x.nb_cells).tolist(),
+                one_over_f["n_f"].tolist(),
+            )
+        }
+        plot_sfs(
+            ax,
+            snapshot.Histogram(sfs_one_over_f),
+            normalise=True,
+            normalise_x=normalisation_x,
+            options=plot_options,
+            color="grey",
+            lw=3,
+            linestyle="--",
+            label=r"$1/f$ sampled",
+        )
+
+    # simulations
+    if idx_sim2plot:
+        plot_sfs(
+            ax,
+            sfs_sims_donor[idx_sim2plot].sfs,
+            normalise=True,
+            normalise_x=normalisation_x,
+            options=plot_options,
+            color="#1f78b4",
+            mew=3,
+            linestyle="",
+            marker=".",
+            markersize=10,
+            label="simulation",
+        )
+
+    plot_sfs_avg(
+        ax,
+        [sfs_.sfs for sfs_ in sfs_sims_donor],
+        options_plot=plot_options,
+        normalise_x=normalisation_x,
+        lw=3,
+        color="#a6cee3",
+        # alpha=0.5,
+        label="avg",
+    )
+
+    # mitchell's data
+    plot_sfs(
+        ax,
+        mitchell_sfs,
+        normalise=True,
+        normalise_x=normalisation_x,
+        options=plot_options,
+        color="purple",
+        mew=3,
+        linestyle="",
+        marker="x",
+        markersize=10,
+        label=f"donor {donor.age} y.o.",
+    )
 
 
 def process_sfs(
