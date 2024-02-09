@@ -96,7 +96,8 @@ def plot_sfs(
     ax.plot(jcells, jmuts, **kwargs)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_ylim([min(jmuts) / 2, 1.3])
+    if min(jmuts) > 0:
+        ax.set_ylim([min(jmuts) / 2, 1.3])
     ax.set_ylabel(
         "density of variants" if normalise else "number of variants",
     )
