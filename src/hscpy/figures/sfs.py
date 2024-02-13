@@ -32,8 +32,9 @@ def plot_ax_sfs_predictions_data_sims(
         options=plot_options,
         normalise_x=normalisation_x,
         linestyle="-",
-        color="grey",
-        label=r"$1/f^2$ sampled",
+        color="black",
+        alpha=0.8,
+        label="growth theory",
         linewidth=3,
     )
 
@@ -54,11 +55,27 @@ def plot_ax_sfs_predictions_data_sims(
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
-            color="grey",
+            color="black",
+            alpha=0.8,
             lw=3,
             linestyle="--",
-            label=r"$1/f$ sampled",
+            label="constant theory"
         )
+
+    # mitchell's data
+    plot_sfs(
+        ax,
+        mitchell_sfs,
+        normalise=True,
+        normalise_x=normalisation_x,
+        options=plot_options,
+        color="#d95f0e",
+        mew=3,
+        linestyle="",
+        marker="x",
+        markersize=10,
+        label=f"donor {donor.age} y.o.",
+    )
 
     # simulations
     if idx_sim2plot:
@@ -68,38 +85,22 @@ def plot_ax_sfs_predictions_data_sims(
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
-            color="#1f78b4",
+            color="#cb181d",
             mew=3,
             linestyle="",
             marker=".",
             markersize=10,
             label="simulation",
         )
-
     plot_sfs_avg(
         ax,
         [sfs_.sfs for sfs_ in sfs_sims_donor],
         options_plot=plot_options,
         normalise_x=normalisation_x,
         lw=3,
-        color="#a6cee3",
-        # alpha=0.5,
+        color="#fed98e",
+        alpha=0.9,
         label="avg",
-    )
-
-    # mitchell's data
-    plot_sfs(
-        ax,
-        mitchell_sfs,
-        normalise=True,
-        normalise_x=normalisation_x,
-        options=plot_options,
-        color="purple",
-        mew=3,
-        linestyle="",
-        marker="x",
-        markersize=10,
-        label=f"donor {donor.age} y.o.",
     )
 
 
