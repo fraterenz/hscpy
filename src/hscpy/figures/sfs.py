@@ -62,6 +62,33 @@ def plot_ax_sfs_predictions_data_sims(
             label="constant theory"
         )
 
+
+    # simulations
+    plot_sfs_avg(
+        ax,
+        [sfs_.sfs for sfs_ in sfs_sims_donor],
+        options_plot=plot_options,
+        normalise_x=normalisation_x,
+        lw=3,
+        color="grey",
+        alpha=0.6,
+        label="avg",
+    )
+    if idx_sim2plot:
+        plot_sfs(
+            ax,
+            sfs_sims_donor[idx_sim2plot].sfs,
+            normalise=True,
+            normalise_x=normalisation_x,
+            options=plot_options,
+            color="grey",
+            mew=3,
+            linestyle="",
+            marker=".",
+            markersize=10,
+            label="simulation",
+        )
+
     # mitchell's data
     plot_sfs(
         ax,
@@ -75,32 +102,6 @@ def plot_ax_sfs_predictions_data_sims(
         marker="x",
         markersize=10,
         label=f"donor {donor.age} y.o.",
-    )
-
-    # simulations
-    if idx_sim2plot:
-        plot_sfs(
-            ax,
-            sfs_sims_donor[idx_sim2plot].sfs,
-            normalise=True,
-            normalise_x=normalisation_x,
-            options=plot_options,
-            color="#cb181d",
-            mew=3,
-            linestyle="",
-            marker=".",
-            markersize=10,
-            label="simulation",
-        )
-    plot_sfs_avg(
-        ax,
-        [sfs_.sfs for sfs_ in sfs_sims_donor],
-        options_plot=plot_options,
-        normalise_x=normalisation_x,
-        lw=3,
-        color="#fed98e",
-        alpha=0.9,
-        label="avg",
     )
 
 
@@ -191,9 +192,9 @@ def plot_sfs(
     if min(jmuts) > 0:
         ax.set_ylim([min(jmuts) / 2, 1.3])
     ax.set_ylabel(
-        "density of variants" if normalise else "number of variants",
+        "Variant density" if normalise else "number of variants",
     )
-    ax.set_xlabel("density of cells" if normalise_x else "number of cells")
+    ax.set_xlabel(r"Clone frequency $f$" if normalise_x else "number of cells")
     ax.tick_params(axis="both", which="both")
     return ax
 
