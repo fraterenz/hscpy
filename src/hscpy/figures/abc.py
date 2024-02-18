@@ -36,7 +36,8 @@ class Gamma:
             stats.gamma.ppf(0.99999, shape, scale=scale),
             100,
         )
-        ax.plot(x, stats.gamma.pdf(x, shape, 0, scale), **kwargs)
+        x, y = np.insert(x, 0, 0), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
+        ax.plot(x, y, **kwargs)
         return ax
 
 
@@ -130,6 +131,7 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     # gamma
     gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
     gamma.plot(fig.axes[0], label=name, color=color)
+    fig.axes[0].set_xlim(bins_eta[0] - 0.01, bins_eta[-1])
 
     return fig, gamma, [estimate_eta, estimate_sigma, estimate_tau, estimate_mu]
 
