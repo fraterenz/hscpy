@@ -15,9 +15,10 @@ from hscpy.figures import AgeSims
 
 
 class Estimate:
-    def __init__(self, point_estimate, credible_interval_95: Tuple[float, float]):
+    def __init__(self, name: str, point_estimate, credible_interval_90: Tuple[float, float]):
+        self.name = name
         self.point_estimate = point_estimate
-        self.credible_interval_95 = credible_interval_95
+        self.credible_interval_90 = credible_interval_90
 
 
 class Gamma:
@@ -88,7 +89,9 @@ def plot_posteriors_fancy(
         ax.legend()
 
     return Estimate(
-        point_estimate, (accepted.quantile((0.05)), accepted.quantile(0.95))
+        xlabel,
+        point_estimate, 
+        (accepted.quantile((0.10)), accepted.quantile(0.90))
     )
 
 
