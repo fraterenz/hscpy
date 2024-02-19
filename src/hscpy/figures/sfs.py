@@ -9,7 +9,7 @@ from math import ceil
 from scipy import stats
 from futils import snapshot
 
-from hscpy import realisation
+from hscpy import realisation, abc
 from hscpy.figures import AgeSims, PlotOptions
 
 
@@ -237,6 +237,9 @@ def plot_sfs_cdf(
     target: snapshot.Histogram,
     sfs_sims: List[realisation.RealisationSfs],
     age: AgeSims,
+    donor_name: str,
+    donor_cells: int,
+    plot_options: PlotOptions,
     markers: List[str] = ["o", "<", "*"],
     colors: List[str] = ["yellowgreen", "cyan", "black"],
     alpha: float = 0.45,
@@ -247,57 +250,50 @@ def plot_sfs_cdf(
 
     axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
     ax3 = subfigs[1].subplots(1, 1)
-
-    target_processed = process_sfs(target, normalise=False, log_transform=True)
-    u_values, u_weights = list(target_processed.keys()), list(target_processed.values())
-
-    axes[0].plot(
-        [10**ele for ele in target_processed.keys()],
-        [10**ele for ele in target_processed.values()],
-        marker="x",
+    normalisation_x = ToCellFrequency(sample_size=donor_cells)
+    plot_sfs(
+        axes[0],
+        target,
+        normalise=True,
+        normalise_x=normalisation_x,
+        options=plot_options,
+        color="#d95f0e",
+        mew=3,
         linestyle="",
-        color="purple",
-        label=f"Mitchell",
-        mew=2,
+        marker="x",
+        # markersize=10,
+        label=f"data",
     )
-    cdf_x, cdf_y = realisation.cdf_from_dict(target_processed)
-    axes[1].plot([10**ele for ele in cdf_x], cdf_y, color="purple", label="Mitchell")
-    axes[1].set_xscale("log")
+
+    cdf_x, cdf_y = realisation.cdf_from_dict(target)
+    axes[1].plot(cdf_x, cdf_y, color="#d95f0e", alpha=0.9)
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
+        params = abc.sfs_summary_statistic_wasserstein_timepoint([run], target, donor_name, age)
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 
-        sim = process_sfs(run.sfs, normalise=False, log_transform=True)
-        v_values, v_weights = list(sim.keys()), list(sim.values())
-        wasserstein_scipy = stats.wasserstein_distance(
-            u_values, v_values, u_weights, v_weights
-        )
-        label = f"id: {s_id}, dist: {wasserstein_scipy:.2f}" if verbose else f"best fit"
-
-        axes[0].loglog(
-            [10**ele for ele in sim.keys()],
-            [10**ele for ele in sim.values()],
-            marker=marker,
+        label = f"id: {s_id}, dist: {params2plot['wasserstein']:.2f}" if verbose else f"best fit"
+        plot_sfs(
+            axes[0],
+            run.sfs,
+            normalise=True,
+            normalise_x=normalisation_x,
+            options=plot_options,
+            color="grey",
+            mew=3,
             linestyle="",
-            mew=1,
-            alpha=alpha,
-            color=color,
+            marker=".",
+            # markersize=1,
             label=label,
         )
 
-        cdf_x, cdf_y = realisation.cdf_from_dict(sim)
+        cdf_x, cdf_y = realisation.cdf_from_dict(run.sfs)
+        axes[1].plot(cdf_x, cdf_y, color="grey", alpha=0.6)
 
-        axes[1].plot(
-            [10**ele for ele in cdf_x],
-            cdf_y,
-            alpha=alpha,
-            color=color,
-            linestyle="--",
-            label=label,
-        )
-    axes[0].set_ylabel("nb of mutants", size="small")
+    axes[0].set_ylabel(axes[0].get_ylabel(), size="small")
+    axes[0].set_xlabel(axes[0].get_xlabel(), size="small")
     axes[1].set_ylabel("cdf", size="small")
     axes[1].set_xlabel("nb of cells", size="small")
 
@@ -313,6 +309,7 @@ def plot_sfs_cdf(
         title_fontsize="small",
         loc=6,
         frameon=False,
+        handletextpad=0.3,
     )
     ax3.set_xticks([])
     ax3.set_yticks([])

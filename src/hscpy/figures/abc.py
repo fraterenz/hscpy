@@ -13,12 +13,34 @@ from scipy import stats
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
+def round_estimates(estimate: float, significant: str) -> str:
+    if significant == "two":
+        return str(round(estimate, 2))
+    elif significant == "one":
+        return str(round(estimate, 1))
+    elif significant == "zero":
+        return str(int(round(estimate, 0)))
+    raise ValueError(
+        f"significant must be either 'two' 'one' or 'zero', not '{significant}'"
+    )
+
 
 class Estimate:
     def __init__(self, name: str, point_estimate, credible_interval_90: Tuple[float, float]):
         self.name = name
         self.point_estimate = point_estimate
-        self.credible_interval_90 = credible_interval_90
+        if point_estimate < credible_interval_90[0]:
+            self.credible_interval_90 = (point_estimate, credible_interval_90[1])
+        else:
+            self.credible_interval_90 = credible_interval_90
+
+    def to_string(self, precision: str) -> str:
+        point_estimate = round_estimates(self.point_estimate, precision)
+        interval = round_estimates(
+                self.point_estimate - self.credible_interval_90[0], precision
+            ), round_estimates(self.credible_interval_90[1] - self.point_estimate, precision)
+        return f"{point_estimate}^{{+{interval[1]}}}_{{-{interval[0]}}}"
+
 
 
 class Gamma:
