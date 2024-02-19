@@ -190,7 +190,7 @@ def plot_sfs(
     ax.set_xscale("log")
     ax.set_yscale("log")
     if min(jmuts) > 0:
-        ax.set_ylim([min(jmuts) / 2, 1.3])
+        ax.set_ylim([min(jmuts) / 2, 1.3 if normalise else None])
     ax.set_ylabel(
         "Variant density" if normalise else "number of variants",
     )
