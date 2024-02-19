@@ -17,9 +17,9 @@ def plot_ax_sfs_predictions_data_sims(
     ax,
     donor: pd.Series,
     corrected_one_over_1_squared: realisation.CorrectedVariants,
-    sfs_sims_donor: List[realisation.RealisationSfs],
     mitchell_sfs: snapshot.Histogram,
     plot_options: PlotOptions,
+    sfs_sims_donor: List[realisation.RealisationSfs] | None = None,
     one_over_f_csv: Path | None = None,
     idx_sim2plot: int | None = None,
 ):
@@ -64,16 +64,17 @@ def plot_ax_sfs_predictions_data_sims(
 
 
     # simulations
-    plot_sfs_avg(
-        ax,
-        [sfs_.sfs for sfs_ in sfs_sims_donor],
-        options_plot=plot_options,
-        normalise_x=normalisation_x,
-        lw=3,
-        color="grey",
-        alpha=0.6,
-        label="avg",
-    )
+    if sfs_sims_donor:
+        plot_sfs_avg(
+            ax,
+            [sfs_.sfs for sfs_ in sfs_sims_donor],
+            options_plot=plot_options,
+            normalise_x=normalisation_x,
+            lw=3,
+            color="grey",
+            alpha=0.6,
+            label="avg",
+        )
     if idx_sim2plot:
         plot_sfs(
             ax,
