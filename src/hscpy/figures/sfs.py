@@ -78,7 +78,7 @@ def plot_ax_sfs_predictions_data_sims(
     if idx_sim2plot:
         plot_sfs(
             ax,
-            sfs_sims_donor[idx_sim2plot].sfs,
+            [sfs_.sfs for sfs_ in sfs_sims_donor if sfs_.parameters.idx == idx_sim2plot][0],
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
@@ -195,7 +195,7 @@ def plot_sfs(
     ax.set_ylabel(
         "Variant density" if normalise else "number of variants",
     )
-    ax.set_xlabel(r"Clone frequency $f$" if normalise_x else "number of cells")
+    ax.set_xlabel(r"Variant frequency $f$" if normalise_x else "Number of cells")
     ax.tick_params(axis="both", which="both")
     return ax
 
