@@ -267,7 +267,7 @@ def plot_sfs_cdf(
     )
 
     cdf_x, cdf_y = realisation.cdf_from_dict(target)
-    axes[1].plot(cdf_x, cdf_y, color="#d95f0e", alpha=0.9)
+    axes[1].plot(cdf_x / donor_cells, cdf_y, color="#d95f0e", alpha=0.9)
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
@@ -291,12 +291,13 @@ def plot_sfs_cdf(
         )
 
         cdf_x, cdf_y = realisation.cdf_from_dict(run.sfs)
-        axes[1].plot(cdf_x, cdf_y, color="grey", alpha=0.6)
+        axes[1].plot(cdf_x / donor_cells, cdf_y, color="grey", alpha=0.6)
 
     axes[0].set_ylabel(axes[0].get_ylabel(), size="small")
     axes[0].set_xlabel(axes[0].get_xlabel(), size="small")
     axes[1].set_ylabel("cdf", size="small")
-    axes[1].set_xlabel("nb of cells", size="small")
+    axes[1].set_xlabel(r"Variant frequency $f$", size="small")
+    axes[1].set_xscale("log")
 
     tick_width = 1.1
     for ax_ in axes:
