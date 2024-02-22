@@ -58,7 +58,7 @@ class Gamma:
             stats.gamma.ppf(0.99999, shape, scale=scale),
             100,
         )
-        x, y = np.insert(x, 0, 0), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
+        x, y = np.insert(x, [0, -1], [0, 0.4]), np.insert(stats.gamma.pdf(x, shape, 0, scale), [0, 0], [0, 0])
         ax.plot(x, y, **kwargs)
         return ax
 
