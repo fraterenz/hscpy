@@ -58,7 +58,12 @@ class Gamma:
             stats.gamma.ppf(0.99999, shape, scale=scale),
             100,
         )
-        x, y = np.insert(x, [0, -1], [0, 0.4]), np.insert(stats.gamma.pdf(x, shape, 0, scale), [0, 0], [0, 0])
+        # pad to zero
+        x, y = np.insert(x, 0, 0), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
+        # pad to 0.4 (max val of s)
+        if max(x) < 0.4:
+            x, y = np.insert(x, -1, 0.4), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
+        
         ax.plot(x, y, **kwargs)
         return ax
 
@@ -187,23 +192,25 @@ class SyntheticValidation:
         sims_sfs: Dict[AgeSims, List[realisation.RealisationSfs]],
         sims_clones: pd.DataFrame,
     ):
-        self.target_sfs = {k: sims_sfs[k][idx] for k in sims_sfs.keys()}
-        self.params = self.target_sfs[AgeSims(0.0)].parameters.into_dict()
+        target_sfs = {k: sfs for k, s in sims_sfs.items() for sfs in s if sfs.parameters.idx == idx}
+        assert target_sfs, f"idx {idx} not found in the simulations"
+        self.params = target_sfs[AgeSims(0.0)].parameters.into_dict()
+        self.params["eta"] = self.params["s"] / self.params["tau"]
+        self.params["sigma"] = self.params["std"] / self.params["tau"]
+        assert idx == self.params["idx"]
+        self.target_sfs = {k: sfs.sfs for k, sfs in target_sfs.items()}
 
         print(
             f"running abc synthetic with ground truth run {idx} with params: {self.params}"
         )
 
-        target_clones = sims_clones.loc[
+        self.target_clones = sims_clones.loc[
             sims_clones.idx == self.params["idx"],
-            ["age", "variant counts detected", "mu"],
-        ].rename(columns={"variant counts detected": "target clones detected"})
-        assert (self.params["mu"] == target_clones.mu).all()
-        target_clones.drop(columns=["mu"], inplace=True)
-        self.target_clones = target_clones
+            ["age", "variant counts detected"]
+        ].rename(columns={"variant counts detected": "clones"})
 
         abc_mitchell = abc.compute_abc_results(
-            self.target_sfs, self.target_clones, sims_sfs, sims_clones
+            self.target_sfs, self.target_clones, sims_sfs, sims_clones[["idx", "age", "variant counts detected"]], "synthetic"
         )
         self.abc = abc_mitchell
 
@@ -221,6 +228,7 @@ class SyntheticValidation:
         runs2keep = abc.run_abc_sfs_clones(
             self.abc, quantile_sfs, quantile_clones, proprtion_runs_disc
         )
+        assert self.params["idx"] in runs2keep, self.params["idx"]
 
         view_synthetic = self.abc[self.abc.idx.isin(runs2keep)].drop_duplicates(
             subset="idx"
@@ -262,7 +270,7 @@ class SyntheticValidation:
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "mu", "std", bins_mu, bins_sigma, density=density
+            view_synthetic, "mu", "sigma", bins_mu, bins_sigma, density=density
         )
         axd["C"].axvline(self.params["mu"])
         axd["C"].axhline(self.params["sigma"])
@@ -270,7 +278,7 @@ class SyntheticValidation:
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "tau", "std", bins_tau, bins_sigma, density=density
+            view_synthetic, "tau", "sigma", bins_tau, bins_sigma, density=density
         )
         axd["C"].axvline(self.params["tau"])
         axd["C"].axhline(self.params["sigma"])

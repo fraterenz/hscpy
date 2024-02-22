@@ -14,30 +14,52 @@ from hscpy.realisation import RealisationSfs
 
 
 def compute_abc_results(
-    target_sfs: Dict[AgeSims, realisation.RealisationSfs],
+    target_sfs: Dict[AgeSims, snapshot.Histogram],
     target_clones: pd.DataFrame,
     sims_sfs: Dict[AgeSims, List[realisation.RealisationSfs]],
     sims_clones: pd.DataFrame,
+    experiment: str,
 ) -> pd.DataFrame:
+    """
+    Compute the ABC summary statistics.
+
+    Required columns for `target_clones`: `age` and `variant counts detected`.
+    Required columns for `sims_clone`: `age`, `idx` and `clones`.
+    """
+    assert np.all(sims_clones.age.unique() == target_clones.age)
+    assert all([ele in target_clones.columns for ele in ["age", "clones"]]), "`target_clones` should have `age` and `clones` as cols"
+    assert all([ele in sims_clones.columns for ele in ["age", "idx", "variant counts detected"]]), "`sims_clones` should have `age`, `idx` and `variant counts detected` as cols"
     print("wasserstein metric")
     abc_results = sfs_summary_statistic_wasserstein(
         sims_sfs,
-        {
-            k: ele.sfs for k, ele in target_sfs.items()
-        },  # ele[-1] means the SFS, k is the age
-        "mitchell",
+        target_sfs,
+        experiment,
     )
 
     print("clones metric")
-    clones = sims_clones.merge(
-        right=target_clones, on="age", how="left", validate="many_to_one"
-    )
-    abc_results["clones diff"] = (
-        clones["target clones detected"] - sims_clones["variant counts detected"]
-    ).abs()
-    abc_results["clones"] = clones["target clones detected"]
+    # perform a one to many merge to expand the series
+    # since all sims with the same age will match one
+    # unique target clone per timepoint
+    clones_diff = target_clones[["age", "clones"]].merge(
+        right=sims_clones[["age", "idx", "variant counts detected"]],
+        how="left",
+        on="age",
+        validate="one_to_many",
+    ) # add data from target
+    clones_diff["clones diff"] = (clones_diff["variant counts detected"] - clones_diff["clones"]).abs()
+    abc_results = abc_results.merge(
+        right=clones_diff,
+        how="left",
+        right_on=["idx", "age"],
+        left_on=["idx", "timepoint"],
+        validate="one_to_one",
+    ).rename(columns={"variant counts detected": "sims clones"})
+    abc_results = summary_statistic_relative_diff_clones(abc_results)
 
-    return summary_statistic_relative_diff_clones(abc_results)
+    abc_results["eta"] = abc_results.s / abc_results.tau
+    abc_results["sigma"] = abc_results["std"] / abc_results.tau
+
+    return abc_results
 
 
 def run_abc_sfs_clones(
@@ -195,6 +217,7 @@ def summary_statistic_relative_diff_clones(summary: pd.DataFrame) -> pd.DataFram
 
 
 def filter_run(summary_t: pd.DataFrame, quantile: float, metric: str) -> pd.DataFrame:
+    assert metric in set(summary_t.columns), f"metric {metric} not found in DataFrame with cols {set(summary_t.columns)}"
     df = summary_t[[metric, "idx", "timepoint"]]
     kept = df.loc[df[metric] <= df[metric].quantile(quantile), ["idx", "timepoint"]]
     kept["metric"] = metric
