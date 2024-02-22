@@ -209,13 +209,13 @@ class SyntheticValidation:
 
     def compute_posteriors(
         self,
-        quantile_sfs: float = 0.2,
-        quantile_clones: float = 0.2,
-        proprtion_runs_disc: float = 0.2,
-        bins_s: np.ndarray = np.arange(0, 0.44, 0.02),
-        bins_mu: np.ndarray = np.arange(0, 20, 1),
-        bins_tau: np.ndarray = np.arange(0, 5.2, 0.2),
-        bins_std: np.ndarray = np.arange(0, 0.12, 0.01),
+        quantile_sfs: float,
+        quantile_clones: float,
+        proprtion_runs_disc: float,
+        bins_eta: np.ndarray,
+        bins_mu: np.ndarray,
+        bins_tau: np.ndarray,
+        bins_sigma: np.ndarray,
         density: bool = False,
     ):
         runs2keep = abc.run_abc_sfs_clones(
@@ -231,24 +231,24 @@ class SyntheticValidation:
 
         gs = []
 
-        axd = plot_results(view_synthetic, "s", "mu", bins_s, bins_mu, density=density)
-        axd["C"].axvline(self.params["s"])
+        axd = plot_results(view_synthetic, "eta", "mu", bins_eta, bins_mu, density=density)
+        axd["C"].axvline(self.params["eta"])
         axd["C"].axhline(self.params["mu"])
         gs.append(axd)
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "s", "std", bins_s, bins_std, density=density
+            view_synthetic, "eta", "sigma", bins_eta, bins_sigma, density=density
         )
-        axd["C"].axvline(self.params["s"])
-        axd["C"].axhline(self.params["std"])
+        axd["C"].axvline(self.params["eta"])
+        axd["C"].axhline(self.params["sigma"])
         gs.append(axd)
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "s", "tau", bins_s, bins_tau, density=density
+            view_synthetic, "eta", "tau", bins_eta, bins_tau, density=density
         )
-        axd["C"].axvline(self.params["s"])
+        axd["C"].axvline(self.params["eta"])
         axd["C"].axhline(self.params["tau"])
         gs.append(axd)
         plt.show()
@@ -262,18 +262,18 @@ class SyntheticValidation:
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "mu", "std", bins_mu, bins_std, density=density
+            view_synthetic, "mu", "std", bins_mu, bins_sigma, density=density
         )
         axd["C"].axvline(self.params["mu"])
-        axd["C"].axhline(self.params["std"])
+        axd["C"].axhline(self.params["sigma"])
         gs.append(axd)
         plt.show()
 
         axd = plot_results(
-            view_synthetic, "tau", "std", bins_tau, bins_std, density=density
+            view_synthetic, "tau", "std", bins_tau, bins_sigma, density=density
         )
         axd["C"].axvline(self.params["tau"])
-        axd["C"].axhline(self.params["std"])
+        axd["C"].axhline(self.params["sigma"])
         gs.append(axd)
 
         plt.show()
