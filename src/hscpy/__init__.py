@@ -1,7 +1,7 @@
 import sys
 import json
 from pathlib import Path
-import matplotlib
+import matplotlib.font_manager
 
 from futils import snapshot, timeserie
 
