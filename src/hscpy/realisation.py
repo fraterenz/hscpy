@@ -12,7 +12,6 @@ from hscpy.parameters import (
     parameters_from_path,
     parse_filename_into_parameters,
     compute_m_background,
-    compute_m_exp,
 )
 from hscpy import load_histogram, parse_path2folder_xdoty_years
 
@@ -44,9 +43,7 @@ class SimulationCMD:
         self.seed = seed
 
     def parameters(self) -> str:
-        exp_cmd = (
-            f"--mu-exp {round(compute_m_exp(self.cells), 5)}" if self.exp_phase else ""
-        )
+        exp_cmd = f"--mu-exp 1.14" if self.exp_phase else ""
         seed_cmd = f"--seed {self.seed}" if self.seed else ""
 
         return f"""-c {self.cells}
@@ -56,7 +53,7 @@ class SimulationCMD:
 --mu0 {self.mu}
 {exp_cmd}
 --mu-division 1.2
---mu-background {round(compute_m_background(self.tau), 5)}
+--mu-background {round(compute_m_background(), 5)}
 --mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
 --subsamples {self.sample}
 --snapshots {self.age}
@@ -64,16 +61,14 @@ class SimulationCMD:
 --sequential""".replace(
             "\n", " "
         )
-        
+
     def cmd(self, path2hsc: str, path2save: str) -> str:
         """Write into a string the bash cmd required to run the simulations.
 
         path2hsc: string with the path to the executable
         """
-        exp_cmd = (
-            f"--mu-exp {round(compute_m_exp(self.cells), 5)}" if self.exp_phase else ""
-        )
-        return path2hsc.strip() + " " + self.parameters(path2save)
+        exp_cmd = f"--mu-exp 1.14" if self.exp_phase else ""
+        return path2hsc.strip() + " " + self.parameters()
 
 
 class RealisationKind(Enum):

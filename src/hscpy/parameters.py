@@ -5,20 +5,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
 
-# avg between 48.2 and 48.8
-BURDEN_BABIES = 48.5
-# mitchell inference (calibration)
-BURDEN_PER_YEAR = 14
-BURDEN_PER_DIVISION = 1.2
+# Ben's nature communications
+MUT_PER_DIV = 1.14
 
 
-def compute_m_exp(cells: int) -> float:
-    return round(BURDEN_BABIES / (2 * np.log((cells + 1) / 2)), 4)
+def m_background(mean, variance, time) -> float:
+    return (mean * (1 + MUT_PER_DIV) - variance) / (time * MUT_PER_DIV)
 
 
-def compute_m_background(tau: float) -> float:
-    # 2 because we assume no asymmetric divisions
-    return BURDEN_PER_YEAR - 2 * BURDEN_PER_DIVISION / tau
+def compute_m_background() -> float:
+    # data comes from Mitchell et al. 2022: the mean and the variance
+    # of the single-cell mutational burden for the newborns
+    return m_background(np.mean([48.8, 48.2]), np.mean([91.7, 91.1]), 9/12)
 
 
 def compute_std_per_division_from_std_per_year(
