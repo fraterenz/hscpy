@@ -10,7 +10,7 @@ from scipy import stats
 from futils import snapshot
 
 from hscpy import realisation, abc
-from hscpy.figures import AgeSims, PlotOptions
+from hscpy.figures import AgeSims, PlotOptions, ToCellFrequency
 
 
 def plot_ax_sfs_predictions_data_sims(
@@ -59,9 +59,8 @@ def plot_ax_sfs_predictions_data_sims(
             alpha=0.8,
             lw=3,
             linestyle="--",
-            label="constant theory"
+            label="constant theory",
         )
-
 
     # simulations
     if sfs_sims_donor:
@@ -78,7 +77,11 @@ def plot_ax_sfs_predictions_data_sims(
     if idx_sim2plot:
         plot_sfs(
             ax,
-            [sfs_.sfs for sfs_ in sfs_sims_donor if sfs_.parameters.idx == idx_sim2plot][0],
+            [
+                sfs_.sfs
+                for sfs_ in sfs_sims_donor
+                if sfs_.parameters.idx == idx_sim2plot
+            ][0],
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
@@ -125,11 +128,6 @@ def process_sfs(
     if log_transform:
         jmuts = [np.log10(val) for val in jmuts]
     return {AgeSims(k): float(val) for k, val in zip(jcells, jmuts)}
-
-
-class ToCellFrequency:
-    def __init__(self, sample_size: int) -> None:
-        self.nb_cells = sample_size
 
 
 def plot_sfs_avg_unormalised(
@@ -271,11 +269,17 @@ def plot_sfs_cdf(
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
-        params = abc.sfs_summary_statistic_wasserstein_timepoint([run], target, donor_name, age)
+        params = abc.sfs_summary_statistic_wasserstein_timepoint(
+            [run], target, donor_name, age
+        )
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 
-        label = f"id: {s_id}, dist: {params2plot['wasserstein']:.2f}" if verbose else f"best fit"
+        label = (
+            f"id: {s_id}, dist: {params2plot['wasserstein']:.2f}"
+            if verbose
+            else f"best fit"
+        )
         plot_sfs(
             axes[0],
             run.sfs,
