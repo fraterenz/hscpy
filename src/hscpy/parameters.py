@@ -7,16 +7,26 @@ from typing import Any, Dict, List, Set, Tuple
 
 # Ben's nature communications, another estimate is 1.2 (Lee-Six et al. 2018)
 MUT_PER_DIV = 1.14
+CELLS = 100_000
+# data obtained from regressing time vs mut burden for donors without any
+# expanded clone (i.e.  {"CB002", "KX001", "SX001"})
+SLOPE = 14.35
 
 
-def m_background(mean, variance, time) -> float:
-    return (mean * (1 + MUT_PER_DIV) - variance) / (time * MUT_PER_DIV)
+def m_background(tau) -> float:
+    return SLOPE - MUT_PER_DIV / tau
 
 
-def compute_m_background() -> float:
-    # data comes from Mitchell et al. 2022: the mean and the variance
-    # of the single-cell mutational burden for the newborns
-    return m_background(np.mean([48.8, 48.2]), np.mean([91.7, 91.1]), 9 / 12)
+def m_background_exp(mean, time) -> float:
+    a = 2 * np.log(CELLS + 1 / 2)
+    return (mean - MUT_PER_DIV * a) / time
+
+
+def compute_m_background_exp() -> float:
+    # data comes from Mitchell et al. 2022: the mean of the single-cell
+    # mutational burden for the newborns is computed from the genotype matrix
+    # MutMatrix.csv
+    return m_background_exp(np.mean([52.33, 50.47]), 9 / 12)
 
 
 def compute_std_per_division_from_std_per_year(
