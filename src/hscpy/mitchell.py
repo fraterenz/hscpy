@@ -7,6 +7,7 @@ from typing import Dict, List, NewType, Set, Tuple
 
 Mitchell = NewType("Mitchell", pd.DataFrame)
 
+
 def donors() -> pd.DataFrame:
     return pd.DataFrame.from_records(
         [
@@ -21,6 +22,7 @@ def donors() -> pd.DataFrame:
             {"name": "KX003", "age": 81, "cells": 328, "clones": 13},
         ]
     )
+
 
 def load_patient(
     patient: str, path2matrix: Path, path2type: Path
@@ -64,9 +66,13 @@ def load_and_process_mitchell(path2sims: Path, drop_donor_KX007: bool) -> Mitche
     return Mitchell(summary)
 
 
-def sfs_donor_mitchell(
-    name: str, age: int, path2mitchell: Path, remove_indels: bool
-) -> Tuple[str, int, int, snapshot.Histogram]:
+def donor_mut_matrix(
+    name: str, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, pd.DataFrame, int]:
+    """Load the genotype matrix for donor `name`.
+
+    Each column represents a cell and each row represents a mutation.
+    """
     if remove_indels:
         filtered_matrix = filter_mutations(
             *load_patient(
@@ -82,8 +88,15 @@ def sfs_donor_mitchell(
             path2mitchell / f"mutMatrix{name}.csv",
             path2mitchell / f"mutType{name}.csv",
         )[0]
-    
+
     cells = filtered_matrix.shape[1]
+    return name, filtered_matrix, cells
+
+
+def sfs_donor_mitchell(
+    name: str, age: int, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, int, int, snapshot.Histogram]:
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
     sfs_donor = filtered_matrix.sum(axis=1).value_counts()
     sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
@@ -91,3 +104,15 @@ def sfs_donor_mitchell(
         {x: y for x, y in zip(x_sfs, sfs_donor.to_numpy())}
     )
     return (name, age, cells, my_sfs)
+
+
+def burden_donor_mitchell(
+    name: str, age: int, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, int, int, snapshot.Histogram]:
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    burden_donor = filtered_matrix.sum(axis=0).value_counts()
+    x_burden, burden_donor = burden_donor.index.to_numpy(), burden_donor.to_numpy()
+    my_burden = snapshot.histogram_from_dict(
+        {x: y for x, y in zip(x_burden, burden_donor)}
+    )
+    return (name, age, cells, my_burden)
