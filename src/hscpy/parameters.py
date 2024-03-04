@@ -13,6 +13,11 @@ CELLS = 100_000
 SLOPE = 14.35
 
 
+def tau_exp(cells: int):
+    # 0.75 is 9/12 years for the newborns
+     return 0.75/np.log(cells)
+
+
 def m_background(tau) -> float:
     return SLOPE - MUT_PER_DIV / tau
 
