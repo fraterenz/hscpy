@@ -27,8 +27,10 @@ class SimulationCMD:
         sigma: float,
         mu: int,
         tau: float,
+        tau_exp: float,
         age: int,
         name: str,
+        dir2save: str,
         exp_phase: bool = True,
         seed: None | int = None,
     ):
@@ -38,15 +40,17 @@ class SimulationCMD:
         self.sigma = sigma
         self.mu = mu
         self.tau = tau
+        self.tau_exp = tau_exp
         self.age = int(age)
         self.sample = int(sample)
         self.name = name
         self.exp_phase = exp_phase
         self.seed = seed
+        self.dir = dir2save
 
     def parameters(self) -> str:
         exp_cmd = (
-            f"--mu-division-exp 1.14 --mu-background-exp {round(compute_m_background_exp(), 5)}"
+            f"--mu-division-exp 1.14 --mu-background-exp {round(compute_m_background_exp(), 5)} --tau-exp {round(self.tau_exp, 5)}"
             if self.exp_phase
             else ""
         )
@@ -55,25 +59,24 @@ class SimulationCMD:
         return f"""-c {self.cells}
 -y {self.age + 1}
 -r 1
---tau {self.tau}
+--sequential
 --mu0 {self.mu}
-{exp_cmd}
+--mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
+--subsamples={self.sample}
+--snapshots={self.age}
+{seed_cmd}
+{self.dir}
+exp-moran
 --mu-division 1.14
 --mu-background {round(m_background(self.tau), 5)}
---mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
---subsamples {self.sample}
---snapshots {self.age}
-{seed_cmd}
---sequential""".replace(
-            "\n", " "
-        )
+--tau {self.tau}
+{exp_cmd}""".replace("\n", " ")
 
     def cmd(self, path2hsc: str, path2save: str) -> str:
         """Write into a string the bash cmd required to run the simulations.
 
         path2hsc: string with the path to the executable
         """
-        exp_cmd = f"--mu-exp 1.14" if self.exp_phase else ""
         return path2hsc.strip() + " " + self.parameters()
 
 
