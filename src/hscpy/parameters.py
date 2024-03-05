@@ -11,11 +11,13 @@ CELLS = 100_000
 # data obtained from regressing time vs mut burden for donors without any
 # expanded clone (i.e.  {"CB002", "KX001", "SX001"})
 SLOPE = 14.35
-
+# the duration of the exp. growing phase in years
+EXP_TIME = 5/12
+# time at birth
+TIME_AT_BIRTH = 9/12
 
 def tau_exp(cells: int):
-    # 0.75 is 9/12 years for the newborns
-     return 0.75/np.log(cells)
+     return EXP_TIME/np.log(cells)
 
 
 def m_background(tau) -> float:
@@ -31,7 +33,7 @@ def compute_m_background_exp() -> float:
     # data comes from Mitchell et al. 2022: the mean of the single-cell
     # mutational burden for the newborns is computed from the genotype matrix
     # MutMatrix.csv
-    return m_background_exp(np.mean([52.33, 50.47]), 9 / 12)
+    return m_background_exp(np.mean([52.33, 50.47]), TIME_AT_BIRTH)
 
 
 def compute_std_per_division_from_std_per_year(
