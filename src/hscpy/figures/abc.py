@@ -17,9 +17,11 @@ from hscpy.figures import AgeSims
 
 class Bins:
     def __init__(self, bins_s, bins_std, bins_mu, bins_tau):
-        self.bins =  {"eta": bins_s, "sigma":bins_std, "mu": bins_mu, "tau": bins_tau }
-        self.iteration = [tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}]
-    
+        self.bins = {"eta": bins_s, "sigma": bins_std, "mu": bins_mu, "tau": bins_tau}
+        self.iteration = [
+            tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}
+        ]
+
     def iterate(self) -> List[Tuple[str, str]]:
         return self.iteration
 
@@ -37,7 +39,9 @@ def round_estimates(estimate: float, significant: str) -> str:
 
 
 class Estimate:
-    def __init__(self, name: str, point_estimate, credible_interval_90: Tuple[float, float]):
+    def __init__(
+        self, name: str, point_estimate, credible_interval_90: Tuple[float, float]
+    ):
         self.name = name
         self.point_estimate = point_estimate
         if point_estimate < credible_interval_90[0]:
@@ -48,10 +52,11 @@ class Estimate:
     def to_string(self, precision: str) -> str:
         point_estimate = round_estimates(self.point_estimate, precision)
         interval = round_estimates(
-                self.point_estimate - self.credible_interval_90[0], precision
-            ), round_estimates(self.credible_interval_90[1] - self.point_estimate, precision)
+            self.point_estimate - self.credible_interval_90[0], precision
+        ), round_estimates(
+            self.credible_interval_90[1] - self.point_estimate, precision
+        )
         return f"{point_estimate}^{{+{interval[1]}}}_{{-{interval[0]}}}"
-
 
 
 class Gamma:
@@ -73,8 +78,10 @@ class Gamma:
         x, y = np.insert(x, 0, 0), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
         # pad to 0.4 (max val of s)
         if max(x) < 0.4:
-            x, y = np.insert(x, -1, 0.4), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
-        
+            x, y = np.insert(x, -1, 0.4), np.insert(
+                stats.gamma.pdf(x, shape, 0, scale), 0, 0
+            )
+
         ax.plot(x, y, **kwargs)
         return ax
 
@@ -128,9 +135,7 @@ def plot_posteriors_fancy(
         ax.legend()
 
     return Estimate(
-        xlabel,
-        point_estimate, 
-        (accepted.quantile((0.10)), accepted.quantile(0.90))
+        xlabel, point_estimate, (accepted.quantile((0.10)), accepted.quantile(0.90))
     )
 
 
@@ -203,7 +208,12 @@ class SyntheticValidation:
         sims_sfs: Dict[AgeSims, List[realisation.RealisationSfs]],
         sims_clones: pd.DataFrame,
     ):
-        target_sfs = {k: sfs for k, s in sims_sfs.items() for sfs in s if sfs.parameters.idx == idx}
+        target_sfs = {
+            k: sfs
+            for k, s in sims_sfs.items()
+            for sfs in s
+            if sfs.parameters.idx == idx
+        }
         assert target_sfs, f"idx {idx} not found in the simulations"
         self.params = target_sfs[AgeSims(0.0)].parameters.into_dict()
         self.params["eta"] = self.params["s"] / self.params["tau"]
@@ -216,12 +226,15 @@ class SyntheticValidation:
         )
 
         self.target_clones = sims_clones.loc[
-            sims_clones.idx == self.params["idx"],
-            ["age", "variant counts detected"]
+            sims_clones.idx == self.params["idx"], ["age", "variant counts detected"]
         ].rename(columns={"variant counts detected": "clones"})
 
         abc_mitchell = abc.compute_abc_results(
-            self.target_sfs, self.target_clones, sims_sfs, sims_clones[["idx", "age", "variant counts detected"]], "synthetic"
+            self.target_sfs,
+            self.target_clones,
+            sims_sfs,
+            sims_clones[["idx", "age", "variant counts detected"]],
+            "synthetic",
         )
         self.abc = abc_mitchell
 
@@ -250,7 +263,9 @@ class SyntheticValidation:
 
         gs = []
 
-        axd = plot_results(view_synthetic, "eta", "mu", bins_eta, bins_mu, density=density)
+        axd = plot_results(
+            view_synthetic, "eta", "mu", bins_eta, bins_mu, density=density
+        )
         axd["C"].axvline(self.params["eta"])
         axd["C"].axhline(self.params["mu"])
         gs.append(axd)

@@ -12,12 +12,13 @@ CELLS = 100_000
 # expanded clone (i.e.  {"CB002", "KX001", "SX001"})
 SLOPE = 14.35
 # the duration of the exp. growing phase in years
-EXP_TIME = 5/12
+EXP_TIME = 5 / 12
 # time at birth
-TIME_AT_BIRTH = 9/12
+TIME_AT_BIRTH = 9 / 12
+
 
 def tau_exp(cells: int):
-     return EXP_TIME/np.log(cells)
+    return EXP_TIME / np.log(cells)
 
 
 def m_background(tau) -> float:

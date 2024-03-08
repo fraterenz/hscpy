@@ -5,10 +5,13 @@ import matplotlib.font_manager
 
 from futils import snapshot, timeserie
 
-for font_file in matplotlib.font_manager.findSystemFonts(fontpaths=[Path("~").expanduser() / ".local/fonts"]):
+for font_file in matplotlib.font_manager.findSystemFonts(
+    fontpaths=[Path("~").expanduser() / ".local/fonts"]
+):
     matplotlib.font_manager.fontManager.addfont(font_file)
 
-matplotlib.rcParams['font.family'] = ['TeX Gyre Heros', 'sans-serif']
+matplotlib.rcParams["font.family"] = ["TeX Gyre Heros", "sans-serif"]
+
 
 def load_histogram(path: Path) -> snapshot.Histogram:
     try:

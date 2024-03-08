@@ -70,7 +70,9 @@ exp-moran
 --mu-division 1.14
 --mu-background {round(m_background(self.tau), 5)}
 --tau {self.tau}
-{exp_cmd}""".replace("\n", " ")
+{exp_cmd}""".replace(
+            "\n", " "
+        )
 
     def cmd(self, path2hsc: str, path2save: str) -> str:
         """Write into a string the bash cmd required to run the simulations.
