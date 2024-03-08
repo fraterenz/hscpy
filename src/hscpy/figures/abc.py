@@ -8,10 +8,21 @@ from matplotlib import ticker
 import pandas as pd
 import seaborn as sns
 import numpy as np
+from itertools import permutations
 from scipy import stats
 
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
+
+
+class Bins:
+    def __init__(self, bins_s, bins_std, bins_mu, bins_tau):
+        self.bins =  {"eta": bins_s, "sigma":bins_std, "mu": bins_mu, "tau": bins_tau }
+        self.iteration = [tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}]
+    
+    def iterate(self) -> List[Tuple[str, str]]:
+        return self.iteration
+
 
 def round_estimates(estimate: float, significant: str) -> str:
     if significant == "two":
