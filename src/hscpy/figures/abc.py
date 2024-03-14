@@ -14,7 +14,6 @@ from scipy import stats
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
-
 class Bins:
     def __init__(self, bins_s, bins_std, bins_mu, bins_tau):
         self.bins = {"eta": bins_s, "sigma": bins_std, "mu": bins_mu, "tau": bins_tau}
@@ -24,6 +23,27 @@ class Bins:
 
     def iterate(self) -> List[Tuple[str, str]]:
         return self.iteration
+
+def plot_posterior_mitchell_quantile(abc_mitchell, quantiles_sfs: float, quantiles_clones: float, prop_runs_disc: float, bins: Bins, density: bool = False):
+    runs2keep = abc.run_abc_sfs_clones(
+        abc_mitchell, quantiles_sfs, quantiles_clones, prop_runs_disc
+    )
+    posterior_mitchell = abc_mitchell.loc[
+        abc_mitchell.idx.isin(runs2keep), :
+    ].drop_duplicates(subset="idx")
+
+    assert not posterior_mitchell.empty, "empty posterior"
+    tot_runs = abc_mitchell.idx.unique().shape[0]
+    print(
+        f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
+    )
+
+    # plots
+    axd = list()
+    for b in bins.iterate():
+        axd.append(plot_results(posterior_mitchell, b[0], b[1], bins.bins[b[0]], bins.bins[b[1]], density=density))
+    return runs2keep, axd
+
 
 
 def round_estimates(estimate: float, significant: str) -> str:
@@ -242,77 +262,16 @@ class SyntheticValidation:
         self,
         quantile_sfs: float,
         quantile_clones: float,
-        proprtion_runs_disc: float,
-        bins_eta: np.ndarray,
-        bins_mu: np.ndarray,
-        bins_tau: np.ndarray,
-        bins_sigma: np.ndarray,
+        proportion_runs_disc: float,
+        bins: Bins,
         density: bool = False,
     ):
-        runs2keep = abc.run_abc_sfs_clones(
-            self.abc, quantile_sfs, quantile_clones, proprtion_runs_disc
-        )
-        assert self.params["idx"] in runs2keep, self.params["idx"]
-
-        view_synthetic = self.abc[self.abc.idx.isin(runs2keep)].drop_duplicates(
-            subset="idx"
-        )
-        assert not view_synthetic.empty, "empty posterior"
-
-        print(f"ABC combined kept {len(runs2keep)} runs")
-
-        gs = []
-
-        axd = plot_results(
-            view_synthetic, "eta", "mu", bins_eta, bins_mu, density=density
-        )
-        axd["C"].axvline(self.params["eta"])
-        axd["C"].axhline(self.params["mu"])
-        gs.append(axd)
-        plt.show()
-
-        axd = plot_results(
-            view_synthetic, "eta", "sigma", bins_eta, bins_sigma, density=density
-        )
-        axd["C"].axvline(self.params["eta"])
-        axd["C"].axhline(self.params["sigma"])
-        gs.append(axd)
-        plt.show()
-
-        axd = plot_results(
-            view_synthetic, "eta", "tau", bins_eta, bins_tau, density=density
-        )
-        axd["C"].axvline(self.params["eta"])
-        axd["C"].axhline(self.params["tau"])
-        gs.append(axd)
-        plt.show()
-
-        axd = plot_results(
-            view_synthetic, "mu", "tau", bins_mu, bins_tau, density=density
-        )
-        axd["C"].axvline(self.params["mu"])
-        axd["C"].axhline(self.params["tau"])
-        gs.append(axd)
-        plt.show()
-
-        axd = plot_results(
-            view_synthetic, "mu", "sigma", bins_mu, bins_sigma, density=density
-        )
-        axd["C"].axvline(self.params["mu"])
-        axd["C"].axhline(self.params["sigma"])
-        gs.append(axd)
-        plt.show()
-
-        axd = plot_results(
-            view_synthetic, "tau", "sigma", bins_tau, bins_sigma, density=density
-        )
-        axd["C"].axvline(self.params["tau"])
-        axd["C"].axhline(self.params["sigma"])
-        gs.append(axd)
-
-        plt.show()
-
-        return gs
+        targets_ordered_as_axes = [("eta", "sigma"), ("mu", "sigma"), ("eta", "mu"), ("eta", "tau"), ("mu", "tau"), ("tau", "sigma") ]
+        runs2keep, axd = plot_posterior_mitchell_quantile(self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins, density)
+        for ax, targets in zip(axd, targets_ordered_as_axes):
+            ax['C'].axvline(self.params[targets[0]])
+            ax['C'].axhline(self.params[targets[1]])
+        return runs2keep, axd
 
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
