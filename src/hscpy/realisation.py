@@ -22,27 +22,28 @@ class SimulationCMD:
     def __init__(
         self,
         cells: int,
-        sample: int,
+        samples: List[int],
         eta: float,
         sigma: float,
         mu: int,
         tau: float,
         tau_exp: float,
-        age: int,
+        ages: List[int],
         name: str,
         dir2save: str,
         exp_phase: bool = True,
         seed: None | int = None,
     ):
         """Write some simulation's parameters into a bash cmd"""
+        assert len(ages) == len(samples)
         self.cells = int(cells)
         self.eta = eta
         self.sigma = sigma
         self.mu = mu
         self.tau = tau
         self.tau_exp = tau_exp
-        self.age = int(age)
-        self.sample = int(sample)
+        self.ages = ages
+        self.samples = samples
         self.name = name
         self.exp_phase = exp_phase
         self.seed = seed
@@ -57,13 +58,13 @@ class SimulationCMD:
         seed_cmd = f"--seed {self.seed}" if self.seed else ""
 
         return f"""-c {self.cells}
--y {self.age + 1}
+-y {self.ages[-1] + 1}
 -r 1
 --sequential
 --mu0 {self.mu}
 --mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
---subsamples={self.sample}
---snapshots={self.age}
+--subsamples={','.join([str(sample) for sample in self.samples])}
+--snapshots={','.join([str(age) for age in self.ages])}
 {seed_cmd}
 {self.dir}
 exp-moran
