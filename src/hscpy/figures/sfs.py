@@ -149,6 +149,41 @@ def plot_sfs_avg_unormalised(
     return ax
 
 
+def plot_sfs_with_avg(
+    ax,
+    sfs: List[realisation.RealisationSfs],
+    sfs_individual: realisation.RealisationSfs,
+    age: int,
+    cells: int,
+    marker: str,
+    options: PlotOptions,
+    **kwargs,
+):
+    """Plot individual realisation SFS and normalised avg."""
+    l = str(age) + " y.o."
+
+    plot_sfs(
+        ax,
+        sfs_individual.sfs,
+        ls="",
+        marker=marker,
+        normalise=True,
+        normalise_x=ToCellFrequency(cells),
+        options=options,
+        color=kwargs.get("color", "blue"),
+    )
+
+    plot_sfs_avg(
+        ax,
+        [s.sfs for s in sfs],
+        normalise_x=ToCellFrequency(cells),
+        options_plot=options,
+        label=l,
+        **kwargs,
+    )
+    return ax
+
+
 def plot_sfs_avg(
     ax,
     my_sfs: List[snapshot.Histogram],
