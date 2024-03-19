@@ -15,6 +15,8 @@ from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
 
+PRECISION = {"eta": "two", "sigma": "three", "mu": "zero", "tau": "one"}
+
 class Estimate:
     def __init__(
         self, name: str, point_estimate, credible_interval_90: Tuple[float, float]
@@ -148,7 +150,6 @@ class Bins:
         return self.iteration
 
     def plot_posterior(self, posterior: pd.DataFrame, density: bool):
-        # plots
         axd = list()
         for b in self.iterate():
             xbins, ybins = self.bins[b[0]], self.bins[b[1]]
@@ -161,22 +162,19 @@ class Bins:
             estimate_x, estimate_y = xbins.compute_estimate(
                 posterior.loc[:, xbins.name]
             ), ybins.compute_estimate(posterior.loc[:, ybins.name])
-            if xbins.name == "sigma":
-                precision = "three"
-            else:
-                precision = "two"
+            precision_y, precision_x = PRECISION[ybins.name], PRECISION[xbins.name]
             ax["C"].axvline(estimate_x.point_estimate, alpha=0.8)
             ax["C"].axhline(estimate_y.point_estimate, alpha=0.8)
             ax["C"].text(
-                0.6,
+                0.55,
                 0.85,
-                f"$\{xbins.name}={{{estimate_x.to_string(precision)}}}$",
+                f"$\{xbins.name}={{{estimate_x.to_string(precision_x)}}}$",
                 transform=ax["C"].transAxes,
             )
             ax["C"].text(
-                0.6,
+                0.55,
                 0.7,
-                f"$\{ybins.name}={{{estimate_y.to_string(precision)}}}$",
+                f"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
                 transform=ax["C"].transAxes,
             )
 
@@ -262,10 +260,11 @@ def plot_posteriors_fancy(
     values = bins.compute_hist(accepted)
     if fancy:
         ax.fill_between(
-            bins.bin[:-1] + bins.bin_distance, values, ls="-", color=color, alpha=0.15
+            bins.bin[:-1] + np.diff(bins.bin) / 2,
+            values, ls="-", color=color, alpha=0.15
         )
         ax.plot(
-            bins.bin[:-1] + bins.bin_distance,
+            bins.bin[:-1] + np.diff(bins.bin) / 2,
             values,
             ls="-",
             marker=".",
@@ -279,13 +278,16 @@ def plot_posteriors_fancy(
             align="mid",
             alpha=0.4,
             density=True,
-            bins=bins,
+            bins=bins.bin,
             edgecolor="black",
             color=color,
         )
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel("pdf")
+    if bins.name == "sigma":
+        # ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.3f}"))
+        ax.set_xlim([0, 0.105])
     if legend:
         ax.legend()
     return ax
@@ -324,12 +326,16 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     fig.axes[5].set_ylabel("")
 
     # gamma
+    estimate_mu, estimate_tau = bins_mu.compute_estimate(posterior.loc[:, "mu"]), bins_tau.compute_estimate(posterior.loc[:, "tau"])
     estimate_eta, estimate_sigma = bins_eta.compute_estimate(posterior.loc[:, "eta"]), bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
     gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
     gamma.plot(fig.axes[0], label=name, color=color)
     fig.axes[0].set_xlim(bins_eta.bin[0] - 0.01, bins_eta.bin[-1])
+    estimates = [estimate_eta, estimate_sigma, estimate_tau, estimate_mu ]
+    for ax, estimate in zip(fig.axes[2:], estimates):
+        ax.axvline(estimate.point_estimate, color=color, ls="--")
 
-    return fig, gamma, [estimate_eta, estimate_sigma]
+    return fig, gamma, estimates
 
 
 def create_posteriors_grid_eta_sigma_tau_mu():
