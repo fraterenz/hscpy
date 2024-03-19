@@ -14,54 +14,12 @@ from scipy import stats
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
 
-class Bins:
-    def __init__(self, bins_s, bins_std, bins_mu, bins_tau):
-        self.bins = {"eta": bins_s, "sigma": bins_std, "mu": bins_mu, "tau": bins_tau}
-        self.iteration = [
-            tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}
-        ]
-
-    def iterate(self) -> List[Tuple[str, str]]:
-        return self.iteration
-
-def plot_posterior_mitchell_quantile(abc_mitchell, quantiles_sfs: float, quantiles_clones: float, prop_runs_disc: float, bins: Bins, density: bool = False):
-    runs2keep = abc.run_abc_sfs_clones(
-        abc_mitchell, quantiles_sfs, quantiles_clones, prop_runs_disc
-    )
-    posterior_mitchell = abc_mitchell.loc[
-        abc_mitchell.idx.isin(runs2keep), :
-    ].drop_duplicates(subset="idx")
-
-    assert not posterior_mitchell.empty, "empty posterior"
-    tot_runs = abc_mitchell.idx.unique().shape[0]
-    print(
-        f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
-    )
-
-    # plots
-    axd = list()
-    for b in bins.iterate():
-        axd.append(plot_results(posterior_mitchell, b[0], b[1], bins.bins[b[0]], bins.bins[b[1]], density=density))
-    return runs2keep, axd
-
-
-
-def round_estimates(estimate: float, significant: str) -> str:
-    if significant == "two":
-        return str(round(estimate, 2))
-    elif significant == "one":
-        return str(round(estimate, 1))
-    elif significant == "zero":
-        return str(int(round(estimate, 0)))
-    raise ValueError(
-        f"significant must be either 'two' 'one' or 'zero', not '{significant}'"
-    )
-
 
 class Estimate:
     def __init__(
         self, name: str, point_estimate, credible_interval_90: Tuple[float, float]
     ):
+        """MAP estimate with 90% credibility interval"""
         self.name = name
         self.point_estimate = point_estimate
         if point_estimate < credible_interval_90[0]:
@@ -77,6 +35,191 @@ class Estimate:
             self.credible_interval_90[1] - self.point_estimate, precision
         )
         return f"{point_estimate}^{{+{interval[1]}}}_{{-{interval[0]}}}"
+
+
+class Bin:
+    def __init__(self, name: str, bin_: np.ndarray):
+        self.name = name
+        self.bin = bin_
+        self.bin_distance = (self.bin[1] - self.bin[0]) / 2
+
+    def compute_hist(self, accepted: pd.Series) -> np.ndarray:
+        values, _ = np.histogram(accepted, bins=self.bin, density=True)
+        return values
+
+    def compute_estimate(self, accepted: pd.Series) -> Estimate:
+        values = self.compute_hist(accepted)
+        point_estimate = self.bin[np.argmax(values)] + self.bin_distance
+        return Estimate(
+            self.name,
+            point_estimate,
+            (accepted.quantile((0.10)), accepted.quantile(0.90)),
+        )
+
+
+def plot_results(
+    results: pd.DataFrame,
+    xbins: Bin,
+    ybins: Bin,
+    density: bool = False,
+) -> Dict:
+    mapping = {
+        "tau": r"$\tau$",
+        "mu": r"$\mu$",
+        "eta": r"$\eta$",
+        "sigma": r"$\sigma$",
+    }
+    if density:
+        print(
+            "WARNING setting `density=True` is buggy: the yaxis of the top plot seems wrong"
+        )
+
+    xlims = [
+        xbins.bin.min() - (xbins.bin_distance),
+        xbins.bin.max() + xbins.bin_distance,
+    ]
+    ylims = [
+        ybins.bin.min() - (ybins.bin_distance),
+        ybins.bin.max() + ybins.bin_distance,
+    ]
+    x, y = xbins.name, ybins.name
+
+    axd = plt.figure(layout="constrained").subplot_mosaic(
+        """
+        A.
+        CD
+        """,
+        # set the height ratios between the rows
+        height_ratios=[1, 3.5],
+        # set the width ratios between the columns
+        width_ratios=[3.5, 1],
+        per_subplot_kw={
+            "A": {
+                "xticklabels": [],
+                "xlim": xlims,
+                "ylabel": "pdf" if density else "counts",
+            },
+            "C": {
+                "xlim": xlims,
+                "ylim": ylims,
+                "xlabel": mapping.get(x, x),
+                "ylabel": mapping.get(y, x),
+            },
+            "D": {
+                "yticklabels": [],
+                "ylim": ylims,
+                "xlabel": "pdf" if density else "counts",
+            },
+        },
+    )
+
+    axd["A"].hist(results[x], density=density, bins=xbins.bin, edgecolor="black")
+    axd["D"].hist(
+        results[y],
+        bins=ybins.bin,
+        density=density,
+        orientation="horizontal",
+        edgecolor="black",
+    )
+    axd["C"].hist2d(
+        x=results[x], y=results[y], bins=[xbins.bin, ybins.bin], cmap="Greys"
+    )
+
+    # force lims after hist2d plot
+    axd["C"].set_xlim(xlims)
+    axd["C"].set_ylim(ylims)
+
+    return axd
+
+
+class Bins:
+    def __init__(self, bins_s, bins_std, bins_mu, bins_tau):
+        self.bins = {
+            "eta": Bin("eta", bins_s),
+            "sigma": Bin("sigma", bins_std),
+            "mu": Bin("mu", bins_mu),
+            "tau": Bin("tau", bins_tau),
+        }
+        self.iteration = [
+            tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}
+        ]
+
+    def iterate(self) -> List[Tuple[str, str]]:
+        return self.iteration
+
+    def plot_posterior(self, posterior: pd.DataFrame, density: bool):
+        # plots
+        axd = list()
+        for b in self.iterate():
+            xbins, ybins = self.bins[b[0]], self.bins[b[1]]
+            ax = plot_results(
+                posterior,
+                xbins,
+                ybins,
+                density=density,
+            )
+            estimate_x, estimate_y = xbins.compute_estimate(
+                posterior.loc[:, xbins.name]
+            ), ybins.compute_estimate(posterior.loc[:, ybins.name])
+            if xbins.name == "sigma":
+                precision = "three"
+            else:
+                precision = "two"
+            ax["C"].axvline(estimate_x.point_estimate, alpha=0.8)
+            ax["C"].axhline(estimate_y.point_estimate, alpha=0.8)
+            ax["C"].text(
+                0.6,
+                0.85,
+                f"$\{xbins.name}={{{estimate_x.to_string(precision)}}}$",
+                transform=ax["C"].transAxes,
+            )
+            ax["C"].text(
+                0.6,
+                0.7,
+                f"$\{ybins.name}={{{estimate_y.to_string(precision)}}}$",
+                transform=ax["C"].transAxes,
+            )
+
+            axd.append(ax)
+
+        return axd
+
+
+def posterior_mitchell_quantile(
+    abc_mitchell,
+    quantiles_sfs: float,
+    quantiles_clones: float,
+    prop_runs_disc: float,
+    bins: Bins,
+    density: bool = False,
+):
+    runs2keep = abc.run_abc_sfs_clones(
+        abc_mitchell, quantiles_sfs, quantiles_clones, prop_runs_disc
+    )
+    posterior_mitchell = abc_mitchell.loc[
+        abc_mitchell.idx.isin(runs2keep), :
+    ].drop_duplicates(subset="idx")
+
+    assert not posterior_mitchell.empty, "empty posterior"
+    tot_runs = abc_mitchell.idx.unique().shape[0]
+    print(
+        f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
+    )
+    return runs2keep
+
+
+def round_estimates(estimate: float, significant: str) -> str:
+    if significant == "three":
+        return str(round(estimate, 3))
+    elif significant == "two":
+        return str(round(estimate, 2))
+    elif significant == "one":
+        return str(round(estimate, 1))
+    elif significant == "zero":
+        return str(int(round(estimate, 0)))
+    raise ValueError(
+        f"significant must be either 'two' 'one' or 'zero', not '{significant}'"
+    )
 
 
 class Gamma:
@@ -109,23 +252,20 @@ class Gamma:
 def plot_posteriors_fancy(
     accepted: pd.Series,
     xlabel: str,
-    bins,
+    bins: Bin,
     ax,
     color,
     fancy: bool,
     legend: bool = False,
-) -> Estimate:
+):
     # https://matplotlib.org/stable/gallery/lines_bars_and_markers/stairs_demo.html
-    bin_distance = (bins[1] - bins[0]) / 2
+    values = bins.compute_hist(accepted)
     if fancy:
-        values, _ = np.histogram(
-            accepted, bins=bins, density=True
-        )  # TODO density=True is ok?
         ax.fill_between(
-            bins[:-1] + bin_distance, values, ls="-", color=color, alpha=0.15
+            bins.bin[:-1] + bins.bin_distance, values, ls="-", color=color, alpha=0.15
         )
         ax.plot(
-            bins[:-1] + bin_distance,
+            bins.bin[:-1] + bins.bin_distance,
             values,
             ls="-",
             marker=".",
@@ -144,19 +284,11 @@ def plot_posteriors_fancy(
             color=color,
         )
 
-    # MAP
-    point_estimate = bins[np.argmax(values)] + bin_distance
-    ax.axvline(x=point_estimate, mew=3, ls="--", c=color)
-    ax.set_xlim([bins[0] - bin_distance, bins[-1] + bin_distance])
-
     ax.set_xlabel(xlabel)
     ax.set_ylabel("pdf")
     if legend:
         ax.legend()
-
-    return Estimate(
-        xlabel, point_estimate, (accepted.quantile((0.10)), accepted.quantile(0.90))
-    )
+    return ax
 
 
 def fmt_two_digits(x, pos):
@@ -168,23 +300,23 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     name: str,
     fig,
     color: str,
-    bins_eta,
-    bins_sigma,
-    bins_tau,
-    bins_mu,
+    bins_eta: Bin,
+    bins_sigma: Bin,
+    bins_tau: Bin,
+    bins_mu: Bin,
     fancy: bool = True,
 ):
     # posteriors
-    estimate_eta = plot_posteriors_fancy(
+    _ = plot_posteriors_fancy(
         posterior.eta, r"$\eta$", bins_eta, fig.axes[2], color, fancy=fancy
     )
-    estimate_sigma = plot_posteriors_fancy(
+    _ = plot_posteriors_fancy(
         posterior.sigma, r"$\sigma$", bins_sigma, fig.axes[3], color, fancy=fancy
     )
-    estimate_tau = plot_posteriors_fancy(
+    _ = plot_posteriors_fancy(
         posterior.tau, r"$\tau$", bins_tau, fig.axes[4], color, fancy=fancy
     )
-    estimate_mu = plot_posteriors_fancy(
+    _ = plot_posteriors_fancy(
         posterior.mu, r"$\mu$", bins_mu, fig.axes[5], color, fancy=fancy
     )
 
@@ -192,11 +324,12 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     fig.axes[5].set_ylabel("")
 
     # gamma
+    estimate_eta, estimate_sigma = bins_eta.compute_estimate(posterior.loc[:, "eta"]), bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
     gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
     gamma.plot(fig.axes[0], label=name, color=color)
-    fig.axes[0].set_xlim(bins_eta[0] - 0.01, bins_eta[-1])
+    fig.axes[0].set_xlim(bins_eta.bin[0] - 0.01, bins_eta.bin[-1])
 
-    return fig, gamma, [estimate_eta, estimate_sigma, estimate_tau, estimate_mu]
+    return fig, gamma, [estimate_eta, estimate_sigma]
 
 
 def create_posteriors_grid_eta_sigma_tau_mu():
@@ -253,7 +386,7 @@ class SyntheticValidation:
             self.target_sfs,
             self.target_clones,
             sims_sfs,
-            sims_clones[["idx", "age", "variant counts detected"]],
+            sims_clones.loc[:, ["idx", "age", "variant counts detected"]],
             "synthetic",
         )
         self.abc = abc_mitchell
@@ -266,11 +399,16 @@ class SyntheticValidation:
         bins: Bins,
         density: bool = False,
     ):
-        targets_ordered_as_axes = [("eta", "sigma"), ("mu", "sigma"), ("eta", "mu"), ("eta", "tau"), ("mu", "tau"), ("tau", "sigma") ]
-        runs2keep, axd = plot_posterior_mitchell_quantile(self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins, density)
-        for ax, targets in zip(axd, targets_ordered_as_axes):
-            ax['C'].axvline(self.params[targets[0]])
-            ax['C'].axhline(self.params[targets[1]])
+        runs2keep = posterior_mitchell_quantile(
+            self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins, density
+        )
+        for b in bins.iterate():
+            xbins, ybins = bins.bins[b[0]], bins.bins[b[1]]
+            axd = plot_results(
+                self.abc.loc[self.abc.idx.isin(runs2keep), :], xbins, ybins
+            )
+            axd["C"].axvline(self.params[xbins.name])
+            axd["C"].axhline(self.params[ybins.name])
         return runs2keep, axd
 
 
@@ -285,177 +423,6 @@ def plot_prior(prior: pd.Series, ax, **kwargs):
     return ax
 
 
-def plot_results(
-    results: pd.DataFrame,
-    x: str,
-    y: str,
-    xbins: np.ndarray,
-    ybins: np.ndarray,
-    density: bool = False,
-) -> Dict:
-    mapping = {
-        "tau": r"$\tau$",
-        "mu": r"$\mu$",
-        "eta": r"$\eta$",
-        "sigma": r"$\sigma$",
-    }
-    if density:
-        print(
-            "WARNING setting `density=True` is buggy: the yaxis of the top plot seems wrong"
-        )
-
-    xlims = [xbins.min() - (xbins[1] - xbins[0]), xbins.max() + (xbins[1] - xbins[0])]
-    ylims = [ybins.min() - (ybins[1] - ybins[0]), ybins.max() + (ybins[1] - ybins[0])]
-
-    axd = plt.figure(layout="constrained").subplot_mosaic(
-        """
-        A.
-        CD
-        """,
-        # set the height ratios between the rows
-        height_ratios=[1, 3.5],
-        # set the width ratios between the columns
-        width_ratios=[3.5, 1],
-        per_subplot_kw={
-            "A": {
-                "xticklabels": [],
-                "xlim": xlims,
-                "ylabel": "pdf" if density else "counts",
-            },
-            "C": {
-                "xlim": xlims,
-                "ylim": ylims,
-                "xlabel": mapping.get(x, x),
-                "ylabel": mapping.get(y, x),
-            },
-            "D": {
-                "yticklabels": [],
-                "ylim": ylims,
-                "xlabel": "pdf" if density else "counts",
-            },
-        },
-    )
-
-    axd["A"].hist(results[x], density=density, bins=xbins, edgecolor="black")
-    axd["D"].hist(
-        results[y],
-        bins=ybins,
-        density=density,
-        orientation="horizontal",
-        edgecolor="black",
-    )
-    axd["C"].hist2d(x=results[x], y=results[y], bins=[xbins, ybins], cmap="Greys")
-
-    # force lims after hist2d plot
-    axd["C"].set_xlim(xlims)
-    axd["C"].set_ylim(ylims)
-
-    return axd
-
-
-def plot_posteriors(
-    results: pd.DataFrame,
-    show_mean: bool,
-    mu_lims: Tuple[float, float],
-    s_lims: Tuple[float, float],
-    std_lims: Tuple[float, float],
-):
-    results = results[["mu", "s", "std"]].drop_duplicates()
-
-    print(f"plotting {results.shape[0]} runs")
-    g_mu_s = plot_results(
-        results,
-        ["mu", "s"],
-        mu_lims,
-        s_lims,
-        {"discrete": True},
-        {"binwidth": 0.01},
-        show_mean,
-    )
-
-    g_mu_std = plot_results(
-        results,
-        ["mu", "std"],
-        mu_lims,
-        std_lims,
-        {"discrete": True},
-        {"binwidth": 0.002},
-        show_mean,
-    )
-
-    g_s_std = plot_results(
-        results,
-        ["s", "std"],
-        s_lims,
-        std_lims,
-        {"binwidth": 0.01},
-        {"binwidth": 0.002},
-        show_mean,
-    )
-    for g_ in {g_mu_s, g_mu_std, g_s_std}:
-        g_.ax_joint.tick_params(
-            which="major",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=5,
-            labelsize=14,
-        )
-        g_.ax_joint.tick_params(
-            which="minor",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=3,
-            labelsize=14,
-        )
-        g_.ax_marg_x.tick_params(
-            which="major",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=3,
-            labelsize=14,
-        )
-        g_.ax_marg_x.tick_params(
-            which="minor",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=3,
-            labelsize=14,
-        )
-        g_.ax_marg_y.tick_params(
-            which="minor",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=3,
-            labelsize=14,
-        )
-        g_.ax_marg_y.tick_params(
-            which="major",
-            bottom=True,
-            top=False,
-            left=True,
-            right=False,
-            width=1.1,
-            length=3,
-            labelsize=14,
-        )
-    return g_mu_s, g_mu_std, g_s_std
-
-
 def get_idx_smaller_distance_clones_idx(
     abc_summary: pd.DataFrame, idx: List[int]
 ) -> int:
@@ -465,7 +432,7 @@ def get_idx_smaller_distance_clones_idx(
     Then, among this subset of runs, take the idx of the run with the smaller
     wasserstein distance.
     """
-    view = abc_summary[abc_summary.idx.isin(idx)]
+    view = abc_summary.loc[abc_summary.idx.isin(idx), :]
     second_view = view[view["clones diff"] == view["clones diff"].min()]
     return second_view.loc[
         second_view.wasserstein == second_view.wasserstein.min(), "idx"
@@ -557,65 +524,3 @@ def abc_simulated_validation(
     g3.ax_joint.plot(s_target, std_target, marker="x", color="black", mew=2)
 
     return abc_simulated, g1, g2, g3
-
-
-def run_abc_indep(
-    summary: pd.DataFrame, metric: str, q: float, counts
-) -> List[abc.AbcResults]:
-    results_indep_timepoints = []
-    for t in summary.timepoint.unique():
-        print(
-            f"running ABC with metric {metric} on timepoint {t} with q {q} with value of {summary.loc[summary.timepoint == t, metric].quantile(q):.2f}"
-        )
-
-        res = abc.run_abc(summary[summary.timepoint == t], q, metric, True)
-        (
-            _,
-            _,
-            _,
-        ) = plot_posteriors(
-            summary[summary.idx.isin(res.get_idx())],
-            False,
-            (0, 21),
-            (0, 0.41),
-            (0, 0.11),
-        )
-        plt.show()
-        results_indep_timepoints.append(res)
-
-    fig, ax = plt.subplots(1, 1)
-    view = counts[
-        counts.idx.isin(
-            set([idx for res in results_indep_timepoints for idx in res.get_idx()])
-        )
-    ]
-    sns.lineplot(
-        view,
-        x="age",
-        y="variant counts detected",
-        errorbar=lambda x: (np.min(x), np.max(x)),
-        ax=ax,
-        label="min-max",
-    )
-    sns.lineplot(
-        view,
-        x="age",
-        y="variant counts detected",
-        errorbar="sd",
-        ax=ax,
-        color="orange",
-        label="std",
-    )
-    sns.scatterplot(
-        data=summary[["age", "clones"]].drop_duplicates(),
-        x="age",
-        y="clones",
-        marker="x",
-        linewidths=2,
-        color="purple",
-        label="Mitchell",
-    )
-    ax.legend()
-    plt.show()
-
-    return results_indep_timepoints
