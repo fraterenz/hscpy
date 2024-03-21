@@ -199,7 +199,8 @@ def posterior_mitchell_quantile(
     ].drop_duplicates(subset="idx")
 
     assert not posterior_mitchell.empty, "empty posterior"
-    tot_runs = abc_mitchell.idx.unique().shape[0]
+    counts = abc_mitchell["idx"].value_counts() 
+    tot_runs = (counts == counts.max()).sum()
     print(
         f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
     )
