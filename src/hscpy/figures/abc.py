@@ -409,13 +409,14 @@ class SyntheticValidation:
         runs2keep = posterior_mitchell_quantile(
             self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins, density
         )
+        axd = list()
         for b in bins.iterate():
             xbins, ybins = bins.bins[b[0]], bins.bins[b[1]]
-            axd = plot_results(
+            axd.append(plot_results(
                 self.abc.loc[self.abc.idx.isin(runs2keep), :], xbins, ybins
-            )
-            axd["C"].axvline(self.params[xbins.name])
-            axd["C"].axhline(self.params[ybins.name])
+            ))
+            axd[-1]["C"].axvline(self.params[xbins.name])
+            axd[-1]["C"].axhline(self.params[ybins.name])
         return runs2keep, axd
 
 
