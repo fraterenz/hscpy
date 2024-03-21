@@ -149,7 +149,7 @@ class Bins:
     def iterate(self) -> List[Tuple[str, str]]:
         return self.iteration
 
-    def plot_posterior(self, posterior: pd.DataFrame, density: bool):
+    def plot_posterior(self, posterior: pd.DataFrame, density: bool, path2file: Path = None):
         axd = list()
         for b in self.iterate():
             xbins, ybins = self.bins[b[0]], self.bins[b[1]]
@@ -176,7 +176,11 @@ class Bins:
                 0.7,
                 f"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
                 transform=ax["C"].transAxes,
-            )
+            ) 
+            if path2file:
+                x = ax['C'].get_xlabel().replace("$", "").replace("\\", "")
+                y = ax['C'].get_ylabel().replace("$", "").replace("\\", "")
+                plt.savefig(str(path2file) + x + f"_{y}.svg")
 
             axd.append(ax)
 
