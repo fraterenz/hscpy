@@ -1,6 +1,6 @@
 import functools
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 from futils import snapshot
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -16,6 +16,7 @@ from hscpy.figures import AgeSims
 
 
 PRECISION = {"eta": "two", "sigma": "three", "mu": "zero", "tau": "one"}
+
 
 class Estimate:
     def __init__(
@@ -149,8 +150,13 @@ class Bins:
     def iterate(self) -> List[Tuple[str, str]]:
         return self.iteration
 
-    def plot_posterior(self, posterior: pd.DataFrame, density: bool, path2file: Path = None):
-        axd = list()
+    def plot_posterior(
+        self,
+        posterior: pd.DataFrame,
+        density: bool,
+        path2file: Union[Path, None] = None,
+    ):
+        axd, estimates = list(), dict()
         for b in self.iterate():
             xbins, ybins = self.bins[b[0]], self.bins[b[1]]
             ax = plot_results(
@@ -162,6 +168,7 @@ class Bins:
             estimate_x, estimate_y = xbins.compute_estimate(
                 posterior.loc[:, xbins.name]
             ), ybins.compute_estimate(posterior.loc[:, ybins.name])
+            estimates[xbins.name], estimates[ybins.name] = estimate_x, estimate_y
             precision_y, precision_x = PRECISION[ybins.name], PRECISION[xbins.name]
             ax["C"].axvline(estimate_x.point_estimate, alpha=0.8)
             ax["C"].axhline(estimate_y.point_estimate, alpha=0.8)
@@ -176,15 +183,15 @@ class Bins:
                 0.7,
                 f"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
                 transform=ax["C"].transAxes,
-            ) 
+            )
             if path2file:
-                x = ax['C'].get_xlabel().replace("$", "").replace("\\", "")
-                y = ax['C'].get_ylabel().replace("$", "").replace("\\", "")
+                x = ax["C"].get_xlabel().replace("$", "").replace("\\", "")
+                y = ax["C"].get_ylabel().replace("$", "").replace("\\", "")
                 plt.savefig(str(path2file) + x + f"_{y}.svg")
 
             axd.append(ax)
 
-        return axd
+        return axd, estimates
 
 
 def posterior_mitchell_quantile(
@@ -203,7 +210,7 @@ def posterior_mitchell_quantile(
     ].drop_duplicates(subset="idx")
 
     assert not posterior_mitchell.empty, "empty posterior"
-    counts = abc_mitchell["idx"].value_counts() 
+    counts = abc_mitchell["idx"].value_counts()
     tot_runs = (counts == counts.max()).sum()
     print(
         f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
@@ -266,7 +273,10 @@ def plot_posteriors_fancy(
     if fancy:
         ax.fill_between(
             bins.bin[:-1] + np.diff(bins.bin) / 2,
-            values, ls="-", color=color, alpha=0.15
+            values,
+            ls="-",
+            color=color,
+            alpha=0.15,
         )
         ax.plot(
             bins.bin[:-1] + np.diff(bins.bin) / 2,
@@ -331,12 +341,16 @@ def plot_posteriors_grid_eta_sigma_tau_mu(
     fig.axes[5].set_ylabel("")
 
     # gamma
-    estimate_mu, estimate_tau = bins_mu.compute_estimate(posterior.loc[:, "mu"]), bins_tau.compute_estimate(posterior.loc[:, "tau"])
-    estimate_eta, estimate_sigma = bins_eta.compute_estimate(posterior.loc[:, "eta"]), bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
+    estimate_mu, estimate_tau = bins_mu.compute_estimate(
+        posterior.loc[:, "mu"]
+    ), bins_tau.compute_estimate(posterior.loc[:, "tau"])
+    estimate_eta, estimate_sigma = bins_eta.compute_estimate(
+        posterior.loc[:, "eta"]
+    ), bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
     gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
     gamma.plot(fig.axes[0], label=name, color=color)
     fig.axes[0].set_xlim(bins_eta.bin[0] - 0.01, bins_eta.bin[-1])
-    estimates = [estimate_eta, estimate_sigma, estimate_tau, estimate_mu ]
+    estimates = [estimate_eta, estimate_sigma, estimate_tau, estimate_mu]
     for ax, estimate in zip(fig.axes[2:], estimates):
         ax.axvline(estimate.point_estimate, color=color, ls="--")
 
@@ -408,20 +422,14 @@ class SyntheticValidation:
         quantile_clones: float,
         proportion_runs_disc: float,
         bins: Bins,
+        path2file: Union[Path, None] = None,
         density: bool = False,
     ):
         runs2keep = posterior_mitchell_quantile(
-            self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins, density
+            self.abc, quantile_sfs, quantile_clones, proportion_runs_disc, bins
         )
-        axd = list()
-        for b in bins.iterate():
-            xbins, ybins = bins.bins[b[0]], bins.bins[b[1]]
-            axd.append(plot_results(
-                self.abc.loc[self.abc.idx.isin(runs2keep), :], xbins, ybins
-            ))
-            axd[-1]["C"].axvline(self.params[xbins.name])
-            axd[-1]["C"].axhline(self.params[ybins.name])
-        return runs2keep, axd
+        posterior = self.abc.loc[self.abc.idx.isin(runs2keep), :]
+        return bins.plot_posterior(posterior, density, path2file)
 
 
 def lims(mask: pd.DataFrame, col: str) -> Tuple[float, float]:
