@@ -67,7 +67,7 @@ class SimulationCMD:
 --snapshots={','.join([str(age) for age in self.ages])}
 {seed_cmd}
 {self.dir}
-exp-moran
+{'exp-moran' if self.exp_phase else 'moran'}
 --mu-division 1.14
 --mu-background {round(m_background(self.tau), 5)}
 --tau {self.tau}
