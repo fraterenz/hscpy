@@ -26,6 +26,7 @@ class SimulationCMD:
         eta: float,
         sigma: float,
         mu: int,
+        mu_exp: int,
         tau: float,
         tau_exp: float,
         ages: List[int],
@@ -40,6 +41,7 @@ class SimulationCMD:
         self.eta = eta
         self.sigma = sigma
         self.mu = mu
+        self.mu_exp = mu_exp
         self.tau = tau
         self.tau_exp = tau_exp
         self.ages = ages
@@ -51,7 +53,7 @@ class SimulationCMD:
 
     def parameters(self) -> str:
         exp_cmd = (
-            f"--mu-division-exp 1.14 --mu-background-exp {round(compute_m_background_exp(), 5)} --tau-exp {round(self.tau_exp, 5)}"
+            f"--mu-exp {self.mu_exp} --mu-division-exp 1.14 --mu-background-exp {round(compute_m_background_exp(), 5)} --tau-exp {round(self.tau_exp, 5)}"
             if self.exp_phase
             else ""
         )
@@ -61,13 +63,13 @@ class SimulationCMD:
 -y {self.ages[-1] + 1}
 -r 1
 --sequential
---mu0 {self.mu}
 --mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
 --subsamples={','.join([str(sample) for sample in self.samples])}
 --snapshots={','.join([str(age) for age in self.ages])}
 {seed_cmd}
 {self.dir}
 {'exp-moran' if self.exp_phase else 'moran'}
+--mu {self.mu}
 --mu-division 1.14
 --mu-background {round(m_background(self.tau), 5)}
 --tau {self.tau}

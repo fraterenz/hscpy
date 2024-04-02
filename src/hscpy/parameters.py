@@ -55,7 +55,6 @@ class Parameters:
         cells: int,
         tau: float,
         mu: float,
-        u: float,
         s: float,
         std: float,
         idx: int,
@@ -65,7 +64,6 @@ class Parameters:
         self.cells = cells
         self.tau = tau
         self.mu = mu
-        self.u = u
         self.s = s
         self.std = std
         self.idx = idx
@@ -85,7 +83,6 @@ class ParametersFile:
         cells: int,
         tau: float,
         mu: float,
-        u: float,
         mean: float,
         std: float,
         idx: int,
@@ -93,7 +90,6 @@ class ParametersFile:
         self.cells = int(cells)
         self.tau = tau
         self.mu = mu
-        self.u = u
         self.s = mean
         self.std = std
         self.idx = int(idx)
