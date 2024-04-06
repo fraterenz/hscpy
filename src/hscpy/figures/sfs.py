@@ -22,6 +22,9 @@ def plot_ax_sfs_predictions_data_sims(
     sfs_sims_donor: List[realisation.RealisationSfs] | None = None,
     one_over_f_csv: Path | None = None,
     idx_sim2plot: int | None = None,
+    mew: float | None = None,
+    markersize: float | None = None,
+    lw: float | None = None,
 ):
     # 1/f^2 sampled predictions
     normalisation_x = ToCellFrequency(sample_size=donor.cells)
@@ -35,7 +38,7 @@ def plot_ax_sfs_predictions_data_sims(
         color="black",
         alpha=0.8,
         label="growth theory",
-        linewidth=3,
+        linewidth=lw if lw else 3,
     )
 
     # 1/f sampled predictions from Nate's simulations
@@ -57,7 +60,7 @@ def plot_ax_sfs_predictions_data_sims(
             options=plot_options,
             color="black",
             alpha=0.8,
-            lw=3,
+            lw=lw if lw else 3,
             linestyle="--",
             label="constant theory",
         )
@@ -69,7 +72,7 @@ def plot_ax_sfs_predictions_data_sims(
             [sfs_.sfs for sfs_ in sfs_sims_donor],
             options_plot=plot_options,
             normalise_x=normalisation_x,
-            lw=3,
+            lw=lw if lw else 3,
             color="grey",
             alpha=0.6,
             label="avg",
@@ -86,10 +89,10 @@ def plot_ax_sfs_predictions_data_sims(
             normalise_x=normalisation_x,
             options=plot_options,
             color="grey",
-            mew=3,
+            mew=mew if mew else 3,
             linestyle="",
             marker=".",
-            markersize=10,
+            markersize=markersize if markersize else 10,
             label="simulation",
         )
 
@@ -101,10 +104,10 @@ def plot_ax_sfs_predictions_data_sims(
         normalise_x=normalisation_x,
         options=plot_options,
         color="#d95f0e",
-        mew=3,
+        mew=mew if mew else 3,
         linestyle="",
         marker="x",
-        markersize=10,
+        markersize=markersize if markersize else 10,
         label=f"donor {donor.age} y.o.",
     )
 
