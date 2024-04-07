@@ -312,49 +312,71 @@ def fmt_two_digits(x, pos):
     return f"{x:.2f}"
 
 
-def plot_posteriors_grid_eta_sigma_tau_mu(
+def plot_gamma_inferred(
+    ax,
     posterior: pd.DataFrame,
     name: str,
-    fig,
     color: str,
     bins_eta: Bin,
     bins_sigma: Bin,
-    bins_tau: Bin,
-    bins_mu: Bin,
+    loc: Tuple[float, float],
+    seed: int = 26,
+    nb2plot: int = 30,
+):
+    estimate_eta = bins_eta.compute_estimate(posterior.loc[:, "eta"])
+    estimate_sigma = bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
+    gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
+    gamma.plot(ax, label=name, color=color)
+    ax.set_xlim(bins_eta.bin[0] - 0.01, bins_eta.bin[-1])
+    ax.text(
+        loc[0],
+        loc[1],
+        f"$\eta={estimate_eta.point_estimate:.2f}\;\sigma={estimate_sigma.point_estimate:.2f}$",
+        fontsize=13,
+        color=color,
+        # bbox=bbox,
+        transform=ax.transAxes,
+        horizontalalignment="right",
+    )
+    ax.set_ylabel("pdf")
+    ax.set_xlabel(r"Innate clone fitness $s$")
+    for row in (
+        posterior[["eta", "sigma"]]
+        .sample(nb2plot, random_state=seed)
+        .itertuples()
+    ):
+        Gamma(row.eta, row.sigma).plot(ax, color=color, alpha=0.1)
+    return ax
+
+def plot_posteriors_with_estimate(
+    ax,
+    posterior: pd.Series,
+    name: str,
+    bins: Bin,
+    color: str,
+    loc: Tuple[float, float],
     fancy: bool = True,
 ):
     # posteriors
+    estimate_ = bins.compute_estimate(posterior)
     _ = plot_posteriors_fancy(
-        posterior.eta, r"$\eta$", bins_eta, fig.axes[2], color, fancy=fancy
+        posterior, name, bins, ax, color, fancy=fancy
     )
-    _ = plot_posteriors_fancy(
-        posterior.sigma, r"$\sigma$", bins_sigma, fig.axes[3], color, fancy=fancy
+    ax.axvline(estimate_.point_estimate, color=color, ls="--")
+    xlabel = ax.get_xlabel().replace("\\" ,"").replace("$", "")
+    precision = PRECISION[xlabel]
+    ax.text(
+        loc[0],
+        loc[1],
+        f"$\\{xlabel}={estimate_.to_string(precision)}$",
+        fontsize=13,
+        color=color,
+        # bbox=bbox,
+        transform=ax.transAxes,
+        horizontalalignment="right",
     )
-    _ = plot_posteriors_fancy(
-        posterior.tau, r"$\tau$", bins_tau, fig.axes[4], color, fancy=fancy
-    )
-    _ = plot_posteriors_fancy(
-        posterior.mu, r"$\mu$", bins_mu, fig.axes[5], color, fancy=fancy
-    )
+    return ax
 
-    fig.axes[3].set_ylabel("")
-    fig.axes[5].set_ylabel("")
-
-    # gamma
-    estimate_mu, estimate_tau = bins_mu.compute_estimate(
-        posterior.loc[:, "mu"]
-    ), bins_tau.compute_estimate(posterior.loc[:, "tau"])
-    estimate_eta, estimate_sigma = bins_eta.compute_estimate(
-        posterior.loc[:, "eta"]
-    ), bins_sigma.compute_estimate(posterior.loc[:, "sigma"])
-    gamma = Gamma(estimate_eta.point_estimate, estimate_sigma.point_estimate)
-    gamma.plot(fig.axes[0], label=name, color=color)
-    fig.axes[0].set_xlim(bins_eta.bin[0] - 0.01, bins_eta.bin[-1])
-    estimates = [estimate_eta, estimate_sigma, estimate_tau, estimate_mu]
-    for ax, estimate in zip(fig.axes[2:], estimates):
-        ax.axvline(estimate.point_estimate, color=color, ls="--")
-
-    return fig, gamma, estimates
 
 
 def create_posteriors_grid_eta_sigma_tau_mu():
