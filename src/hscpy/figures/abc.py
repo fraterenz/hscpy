@@ -276,7 +276,7 @@ def plot_posteriors_fancy(
             values,
             ls="-",
             color=color,
-            alpha=0.15,
+            alpha=0.3,
         )
         ax.plot(
             bins.bin[:-1] + np.diff(bins.bin) / 2,
@@ -355,12 +355,11 @@ def plot_posteriors_with_estimate(
     bins: Bin,
     color: str,
     loc: Tuple[float, float],
-    fancy: bool = True,
 ):
     # posteriors
     estimate_ = bins.compute_estimate(posterior)
     _ = plot_posteriors_fancy(
-        posterior, name, bins, ax, color, fancy=fancy
+        posterior, name, bins, ax, color, fancy=True
     )
     ax.axvline(estimate_.point_estimate, color=color, ls="--")
     xlabel = ax.get_xlabel().replace("\\" ,"").replace("$", "")
