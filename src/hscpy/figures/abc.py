@@ -76,6 +76,7 @@ def plot_results(
         print(
             "WARNING setting `density=True` is buggy: the yaxis of the top plot seems wrong"
         )
+    results_unique = results.drop_duplicates("idx")
 
     xlims = [
         xbins.bin.min() - (xbins.bin_distance),
@@ -87,7 +88,7 @@ def plot_results(
     ]
     x, y = xbins.name, ybins.name
 
-    axd = plt.figure(layout="constrained").subplot_mosaic(
+    axd = plt.figure(figsize=(3.5, 3), layout="constrained").subplot_mosaic(
         """
         A.
         CD
@@ -116,16 +117,16 @@ def plot_results(
         },
     )
 
-    axd["A"].hist(results[x], density=density, bins=xbins.bin, edgecolor="black")
+    axd["A"].hist(results_unique[x], density=density, bins=xbins.bin, edgecolor="black")
     axd["D"].hist(
-        results[y],
+        results_unique[y],
         bins=ybins.bin,
         density=density,
         orientation="horizontal",
         edgecolor="black",
     )
     axd["C"].hist2d(
-        x=results[x], y=results[y], bins=[xbins.bin, ybins.bin], cmap="Greys"
+        x=results_unique[x], y=results_unique[y], bins=[xbins.bin, ybins.bin], cmap="Greys"
     )
 
     # force lims after hist2d plot
@@ -177,12 +178,14 @@ class Bins:
                 0.85,
                 f"$\{xbins.name}={{{estimate_x.to_string(precision_x)}}}$",
                 transform=ax["C"].transAxes,
+                fontsize=12,
             )
             ax["C"].text(
                 0.45,
                 0.7,
                 f"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
                 transform=ax["C"].transAxes,
+                fontsize=12,
             )
             if path2file:
                 x = ax["C"].get_xlabel().replace("$", "").replace("\\", "")
