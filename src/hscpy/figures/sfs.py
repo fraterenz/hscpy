@@ -270,6 +270,8 @@ def plot_sfs_correction(
 
 
 def plot_sfs_cdf(
+    ax_sfs,
+    ax_cdf,
     idx2show: Set[int],
     target: snapshot.Histogram,
     sfs_sims: List[realisation.RealisationSfs],
@@ -282,28 +284,25 @@ def plot_sfs_cdf(
     alpha: float = 0.45,
     verbose: bool = True,
 ):
-    fig = plt.figure(layout="constrained", figsize=(7, 4))
-    subfigs = fig.subfigures(1, 2, wspace=-0.1, width_ratios=[2.4, 1])
-
-    axes = subfigs[0].subplots(2, 1, height_ratios=[1.4, 1])
-    ax3 = subfigs[1].subplots(1, 1)
     normalisation_x = ToCellFrequency(sample_size=donor_cells)
     plot_sfs(
-        axes[0],
+        ax_sfs,
         target,
         normalise=True,
         normalise_x=normalisation_x,
         options=plot_options,
         color="#d95f0e",
         mew=3,
+        markersize=7,
         linestyle="",
         marker="x",
         # markersize=10,
         label=f"data",
+        alpha=0.85,
     )
 
     cdf_x, cdf_y = realisation.cdf_from_dict(target)
-    axes[1].plot(cdf_x / donor_cells, cdf_y, color="#d95f0e", alpha=0.9)
+    ax_cdf.plot(cdf_x / donor_cells, cdf_y, color="#d95f0e", alpha=0.9)
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
@@ -313,52 +312,25 @@ def plot_sfs_cdf(
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 
-        label = (
-            f"id: {s_id}, dist: {params2plot['wasserstein']:.2f}"
-            if verbose
-            else f"best fit"
-        )
         plot_sfs(
-            axes[0],
+            ax_sfs,
             run.sfs,
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
             color="grey",
             mew=3,
+            markersize=7,
             linestyle="",
             marker=".",
+            alpha=0.85,
             # markersize=1,
-            label=label,
+            label=s_id,
         )
 
         cdf_x, cdf_y = realisation.cdf_from_dict(run.sfs)
-        axes[1].plot(cdf_x / donor_cells, cdf_y, color="grey", alpha=0.6)
+        ax_cdf.plot(cdf_x / donor_cells, cdf_y, color="grey", alpha=0.6)
 
-    axes[0].set_ylabel(axes[0].get_ylabel(), size="small")
-    axes[0].set_xlabel(axes[0].get_xlabel(), size="small")
-    axes[1].set_ylabel("cdf", size="small")
-    axes[1].set_xlabel(r"Variant frequency $f$", size="small")
-    axes[1].set_xscale("log")
-
-    tick_width = 1.1
-    for ax_ in axes:
-        ax_.minorticks_on()
-        ax_.tick_params(which="major", width=tick_width, length=5, labelsize=14)
-        ax_.tick_params(which="minor", width=tick_width, length=3, labelsize=14)
-    ax3.legend(
-        *axes[0].get_legend_handles_labels(),
-        title=f"{age:.0f} years",
-        fontsize="small",
-        title_fontsize="small",
-        loc=6,
-        frameon=False,
-        handletextpad=0.3,
-    )
-    ax3.set_xticks([])
-    ax3.set_yticks([])
-    ax3.spines.right.set_visible(False)
-    ax3.spines.left.set_visible(False)
-    ax3.spines.top.set_visible(False)
-    ax3.spines.bottom.set_visible(False)
-    return fig
+    ax_cdf.set_xlabel(r"Variant frequency $f$")
+    ax_cdf.set_ylabel("Cdf")
+    return ax_sfs, ax_cdf
