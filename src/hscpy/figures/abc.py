@@ -334,7 +334,7 @@ def plot_gamma_inferred(
     ax.text(
         loc[0],
         loc[1],
-        f"$\eta={estimate_eta.point_estimate:.2f}\;\sigma={estimate_sigma.point_estimate:.2f}$",
+        f"$\eta={estimate_eta.point_estimate:.2f}\;\sigma={estimate_sigma.point_estimate:.3f}$",
         fontsize=13,
         color=color,
         # bbox=bbox,
