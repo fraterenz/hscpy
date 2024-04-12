@@ -1,4 +1,5 @@
 """Load patient's data"""
+
 import pandas as pd
 from futils import snapshot
 from pathlib import Path

@@ -126,7 +126,10 @@ def plot_results(
         edgecolor="black",
     )
     axd["C"].hist2d(
-        x=results_unique[x], y=results_unique[y], bins=[xbins.bin, ybins.bin], cmap="Greys"
+        x=results_unique[x],
+        y=results_unique[y],
+        bins=[xbins.bin, ybins.bin],
+        cmap="Greys",
     )
 
     # force lims after hist2d plot
@@ -344,12 +347,11 @@ def plot_gamma_inferred(
     ax.set_ylabel("pdf")
     ax.set_xlabel(r"Innate clone fitness $s$")
     for row in (
-        posterior[["eta", "sigma"]]
-        .sample(nb2plot, random_state=seed)
-        .itertuples()
+        posterior[["eta", "sigma"]].sample(nb2plot, random_state=seed).itertuples()
     ):
         Gamma(row.eta, row.sigma).plot(ax, color=color, alpha=0.1)
     return ax
+
 
 def plot_posteriors_with_estimate(
     ax,
@@ -361,11 +363,9 @@ def plot_posteriors_with_estimate(
 ):
     # posteriors
     estimate_ = bins.compute_estimate(posterior)
-    _ = plot_posteriors_fancy(
-        posterior, name, bins, ax, color, fancy=True
-    )
+    _ = plot_posteriors_fancy(posterior, name, bins, ax, color, fancy=True)
     ax.axvline(estimate_.point_estimate, color=color, ls="--")
-    xlabel = ax.get_xlabel().replace("\\" ,"").replace("$", "")
+    xlabel = ax.get_xlabel().replace("\\", "").replace("$", "")
     precision = PRECISION[xlabel]
     ax.text(
         loc[0],
@@ -378,7 +378,6 @@ def plot_posteriors_with_estimate(
         horizontalalignment="right",
     )
     return ax
-
 
 
 def create_posteriors_grid_eta_sigma_tau_mu():
