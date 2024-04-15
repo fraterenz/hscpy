@@ -43,7 +43,9 @@ def compute_std_per_division_from_std_per_year(
     return std_per_year * tau
 
 
-def compute_s_per_division_from_s_per_year(s_per_year: float, tau: float) -> float:
+def compute_s_per_division_from_s_per_year(
+    s_per_year: float, tau: float
+) -> float:
     return s_per_year * tau
 
 
@@ -73,7 +75,11 @@ class Parameters:
 
     def stringify(self, some_params: Set[str]) -> str:
         return ", ".join(
-            [f"{k}={v}" for k, v in self.into_dict().items() if k in some_params]
+            [
+                f"{k}={v}"
+                for k, v in self.into_dict().items()
+                if k in some_params
+            ]
         )
 
 
@@ -100,7 +106,7 @@ class ParametersFile:
 
 def parameters_from_path(path: Path) -> Parameters:
     """Assume something like
-    test1/20cells/sfs/0dot0years/13dot26541mu0_0dot3158431053161621u_0dot034741633mean_0dot013301114std_1tau_20cells_270idx.json
+    test1/20cells/sfs/0dot0years/13dot26541mu0_0dot034741633mean_0dot013301114std_1tau_20cells_270idx.json
     """
     parts = path.parts
     match_sample = re.compile(r"^(\d+)(cells)$", re.IGNORECASE)
@@ -126,7 +132,9 @@ def parse_filename_into_parameters(filename: Path) -> ParametersFile:
         if matched:
             my_dict[matched.group(2)] = float(matched.group(1))
         else:
-            raise ValueError(f"could not parse the filename into parameters {filename}")
+            raise ValueError(
+                f"could not parse the filename into parameters {filename}"
+            )
     return ParametersFile(**my_dict)
 
 

@@ -1,9 +1,10 @@
 """Load patient's data"""
 
-import pandas as pd
-from futils import snapshot
 from pathlib import Path
-from typing import Dict, List, NewType, Set, Tuple
+from typing import NewType, Tuple
+
+from futils import snapshot
+import pandas as pd
 
 
 Mitchell = NewType("Mitchell", pd.DataFrame)
@@ -37,21 +38,28 @@ def load_patient(
     return mut_matrix, mut_type
 
 
-def filter_mutations(m_matrix: pd.DataFrame, m_type: pd.DataFrame) -> pd.DataFrame:
+def filter_mutations(
+    m_matrix: pd.DataFrame, m_type: pd.DataFrame
+) -> pd.DataFrame:
     return m_matrix.iloc[m_type[m_type == "SNV"].dropna().index, :]
 
 
-def load_and_process_mitchell(path2sims: Path, drop_donor_KX007: bool) -> Mitchell:
+def load_and_process_mitchell(
+    path2sims: Path, drop_donor_KX007: bool
+) -> Mitchell:
     assert (
         path2sims.name == "Summary_cut.csv"
-    ), f"wrong arg `path2sims` {path2sims}, should be the path to the file `Summary_cut.csv`"
+    ), f"wrong arg `path2sims` {path2sims}, expected path to file "
+    "`Summary_cut.csv`"
     summary = pd.read_csv(path2sims, index_col=0)
     summary.cell_type = summary.cell_type.astype("category")
     summary.sample_type = summary.sample_type.astype("category")
     summary.sort_values(by="age", inplace=True)
     summary.reset_index(inplace=True)
     # drop this donor because they have updated it twice
-    summary.drop(index=summary[summary.donor_id == "KX007"].index, inplace=True)
+    summary.drop(
+        index=summary[summary.donor_id == "KX007"].index, inplace=True
+    )
 
     # neglect some duplicated colonies e.g. summary.colony_ID == "11_E07"
     summary = summary.merge(
@@ -97,7 +105,9 @@ def donor_mut_matrix(
 def sfs_donor_mitchell(
     name: str, age: int, path2mitchell: Path, remove_indels: bool
 ) -> Tuple[str, int, int, snapshot.Histogram]:
-    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    _, filtered_matrix, cells = donor_mut_matrix(
+        name, path2mitchell, remove_indels
+    )
     sfs_donor = filtered_matrix.sum(axis=1).value_counts()
     sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
@@ -110,9 +120,14 @@ def sfs_donor_mitchell(
 def burden_donor_mitchell(
     name: str, age: int, path2mitchell: Path, remove_indels: bool
 ) -> Tuple[str, int, int, snapshot.Histogram]:
-    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    _, filtered_matrix, cells = donor_mut_matrix(
+        name, path2mitchell, remove_indels
+    )
     burden_donor = filtered_matrix.sum(axis=0).value_counts()
-    x_burden, burden_donor = burden_donor.index.to_numpy(), burden_donor.to_numpy()
+    x_burden, burden_donor = (
+        burden_donor.index.to_numpy(),
+        burden_donor.to_numpy(),
+    )
     my_burden = snapshot.histogram_from_dict(
         {x: y for x, y in zip(x_burden, burden_donor)}
     )

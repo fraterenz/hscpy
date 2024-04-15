@@ -1,21 +1,22 @@
+from dataclasses import dataclass
+from enum import Enum, StrEnum, auto
+from pathlib import Path
 from typing import Dict, List, Mapping, Sequence, Set, Tuple, Union
+
+from futils import snapshot
 import numpy as np
 from scipy import stats
-from enum import StrEnum, auto, Enum
-from pathlib import Path
-from dataclasses import dataclass
-from futils import snapshot
+
+from hscpy import load_histogram, parse_path2folder_xdoty_years
 from hscpy.figures import AgeSims
 from hscpy.parameters import (
     compute_m_background_exp,
     compute_s_per_division_from_s_per_year,
     compute_std_per_division_from_std_per_year,
     m_background,
-    m_background_exp,
     parameters_from_path,
     parse_filename_into_parameters,
 )
-from hscpy import load_histogram, parse_path2folder_xdoty_years
 
 
 class SimulationCMD:
@@ -53,29 +54,32 @@ class SimulationCMD:
 
     def parameters(self) -> str:
         exp_cmd = (
-            f"--mu-exp {self.mu_exp} --mu-division-exp 1.14 --mu-background-exp {round(compute_m_background_exp(), 5)} --tau-exp {round(self.tau_exp, 5)}"
+            f"--mu-exp {self.mu_exp} --mu-division-exp 1.14 "
+            f" --mu-background-exp {round(compute_m_background_exp(), 5)}"
+            f" --tau-exp {round(self.tau_exp, 5)}"
             if self.exp_phase
             else ""
         )
         seed_cmd = f"--seed {self.seed}" if self.seed else ""
+        eta, sigma, tau, samples = self.eta, self.sigma, self.tau, self.samples
+        mean = round(compute_s_per_division_from_s_per_year(eta, tau), 5)
+        std = round(compute_std_per_division_from_std_per_year(sigma, tau), 5)
 
-        return f"""-c {self.cells}
--y {self.ages[-1] + 1}
--r 1
---sequential
---mean-std {round(compute_s_per_division_from_s_per_year(self.eta, self.tau), 5)} {round(compute_std_per_division_from_std_per_year(self.sigma, self.tau), 5)}
---subsamples={','.join([str(sample) for sample in self.samples])}
---snapshots={','.join([str(age) for age in self.ages])}
-{seed_cmd}
-{self.dir}
-{'exp-moran' if self.exp_phase else 'moran'}
---mu {self.mu}
---mu-division 1.14
---mu-background {round(m_background(self.tau), 5)}
---tau {self.tau}
-{exp_cmd}""".replace(
-            "\n", " "
-        )
+        return f"-c {self.cells}"\
+            f"-y {self.ages[-1] + 1}"\
+            " -r 1"\
+            " --sequential"\
+            f" --mean-std {mean} {std}"\
+            f" --subsamples={','.join([str(sample) for sample in samples])}"\
+            f" --snapshots={','.join([str(age) for age in self.ages])}"\
+            f" {seed_cmd}"\
+            f" {self.dir}"\
+            f" {'exp-moran' if self.exp_phase else 'moran'}"\
+            f" --mu {self.mu}"\
+            " --mu-division 1.14"\
+            f" --mu-background {round(m_background(self.tau), 5)}"\
+            f" --tau {self.tau}"\
+            f" {exp_cmd}"
 
     def cmd(self, path2hsc: str, path2save: str) -> str:
         """Write into a string the bash cmd required to run the simulations.
@@ -101,7 +105,9 @@ def load_all_sfs_by_age(path2dir: Path, filtering: Set[int] | None = None):
     return load_realisations(path2dir, RealisationKind.SFS, filtering)
 
 
-def cdf_from_dict(my_dict: Dict[AgeSims, float]) -> Tuple[np.ndarray, np.ndarray]:
+def cdf_from_dict(
+    my_dict: Dict[AgeSims, float]
+) -> Tuple[np.ndarray, np.ndarray]:
     ordered_distr = dict(sorted(my_dict.items()))
     tot = sum(ordered_distr.values())
     probs = np.array(
@@ -160,12 +166,16 @@ def compute_variants(
     else:
         raise ValueError
 
-    assert variants2correct.shape[0] == pop_size, f"{variants2correct.shape[0]}"
+    assert (
+        variants2correct.shape[0] == pop_size
+    ), f"{variants2correct.shape[0]}"
     corrected = (
         compute_sampling_correction(pop_size, sample_size)[:sample_size, :]
         @ variants2correct
     )
-    return CorrectedVariants(correction, corrected, variants2correct, frequencies)
+    return CorrectedVariants(
+        correction, corrected, variants2correct, frequencies
+    )
 
 
 class RealisationBurden:
@@ -186,12 +196,17 @@ def compute_mean_variance(
     cells = sum(burden.values())
     mean = sum(map(lambda entry: entry[0] * entry[1] / cells, burden.items()))
     variance = sum(
-        map(lambda entry: (entry[0] - mean) ** 2 * entry[1] / cells, burden.items())
+        map(
+            lambda entry: (entry[0] - mean) ** 2 * entry[1] / cells,
+            burden.items(),
+        )
     )
     return mean, variance
 
 
-def plot_burden(burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs):
+def plot_burden(
+    burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs
+):
     # remove empty entries
     cleaned = {k: v for k, v in sorted(burden.items()) if v > 0}
 
@@ -227,7 +242,9 @@ def average_burden(burdens: List[snapshot.Histogram]):
     return jcells, np.mean(avg_burden, axis=0)
 
 
-def single_cell_mutations_from_burden(burden: snapshot.Histogram) -> np.ndarray:
+def single_cell_mutations_from_burden(
+    burden: snapshot.Histogram,
+) -> np.ndarray:
     """From the SFS, create an array where each entry is the number of
     mutations found in a cell"""
     muts = []
@@ -262,16 +279,17 @@ def load_realisations(
                 else:
                     i += 1
                 if realisation == RealisationKind.BURDEN:
-                    realisations[parse_path2folder_xdoty_years(p.parent)].append(
-                        RealisationBurden(p)
-                    )
+                    realisations[
+                        parse_path2folder_xdoty_years(p.parent)
+                    ].append(RealisationBurden(p))
                 elif realisation == RealisationKind.SFS:
-                    realisations[parse_path2folder_xdoty_years(p.parent)].append(
-                        RealisationSfs(p)
-                    )
+                    realisations[
+                        parse_path2folder_xdoty_years(p.parent)
+                    ].append(RealisationSfs(p))
                 else:
                     raise ValueError(
-                        f"realisation {realisation} not recognized. Must be `SFS` or `BURDEN`"
+                        f"realisation {realisation} not recognized. Must be "
+                        "`SFS` or `BURDEN`"
                     )
 
             print(f"loaded {i + 1} files from {path}")

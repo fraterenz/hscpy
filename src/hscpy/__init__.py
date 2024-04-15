@@ -1,9 +1,9 @@
-import sys
 import json
 from pathlib import Path
-import matplotlib.font_manager
+import sys
 
 from futils import snapshot, timeserie
+import matplotlib.font_manager
 
 for font_file in matplotlib.font_manager.findSystemFonts(
     fontpaths=[Path("~").expanduser() / ".local/fonts"]
@@ -30,6 +30,10 @@ def load_variant(path: Path) -> timeserie.Timeserie:
 
 
 def parse_path2folder_xdoty_years(path2folder: Path) -> float:
-    """assume `path2folder` exists and is of the form: `/path/to/data/10dot5years`"""
+    """assume `path2folder` exists and is of the form:
+    `/path/to/data/10dot5years`
+    """
     assert path2folder.is_dir()
-    return round(float(path2folder.stem.replace("dot", ".").replace("years", "")), 1)
+    return round(
+        float(path2folder.stem.replace("dot", ".").replace("years", "")), 1
+    )

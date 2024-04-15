@@ -1,8 +1,7 @@
 from futils import snapshot
-import matplotlib.pyplot as plt
 import numpy as np
 
-from hscpy.figures import AgeSims, PlotOptions
+from hscpy.figures import PlotOptions
 
 
 def plot_burden(
@@ -15,7 +14,6 @@ def plot_burden(
     **kwargs,
 ):
     muts, counts = list(my_burden.keys()), list(my_burden.values())
-    min_, max_ = min(muts), max(muts)
     hist, edges = np.histogram(
         muts,
         bins=bins,

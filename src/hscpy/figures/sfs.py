@@ -1,15 +1,11 @@
-import pandas as pd
-import random
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib import ticker
 from pathlib import Path
 from typing import Dict, List, Set
-from math import ceil
-from scipy import stats
-from futils import snapshot
 
-from hscpy import realisation, abc
+from futils import snapshot
+import numpy as np
+import pandas as pd
+
+from hscpy import realisation
 from hscpy.figures import AgeSims, PlotOptions, ToCellFrequency
 
 
@@ -44,7 +40,9 @@ def plot_ax_sfs_predictions_data_sims(
     # 1/f sampled predictions from Nate's simulations
     if one_over_f_csv:
         one_over_f = pd.read_csv(one_over_f_csv)
-        one_over_f.drop(index=one_over_f[one_over_f["_f"] == 0.0].index, inplace=True)
+        one_over_f.drop(
+            index=one_over_f[one_over_f["_f"] == 0.0].index, inplace=True
+        )
         sfs_one_over_f = {
             cell: muts
             for cell, muts in zip(
@@ -77,24 +75,24 @@ def plot_ax_sfs_predictions_data_sims(
             alpha=0.6,
             label="avg",
         )
-    if idx_sim2plot:
-        plot_sfs(
-            ax,
-            [
-                sfs_.sfs
-                for sfs_ in sfs_sims_donor
-                if sfs_.parameters.idx == idx_sim2plot
-            ][0],
-            normalise=True,
-            normalise_x=normalisation_x,
-            options=plot_options,
-            color="grey",
-            mew=mew if mew else 3,
-            linestyle="",
-            marker=".",
-            markersize=markersize if markersize else 10,
-            label="simulation",
-        )
+        if idx_sim2plot:
+            plot_sfs(
+                ax,
+                [
+                    sfs_.sfs
+                    for sfs_ in sfs_sims_donor
+                    if sfs_.parameters.idx == idx_sim2plot
+                ][0],
+                normalise=True,
+                normalise_x=normalisation_x,
+                options=plot_options,
+                color="grey",
+                mew=mew if mew else 3,
+                linestyle="",
+                marker=".",
+                markersize=markersize if markersize else 10,
+                label="simulation",
+            )
 
     # mitchell's data
     plot_sfs(
@@ -116,8 +114,8 @@ def process_sfs(
     my_sfs: snapshot.Histogram, normalise: bool, log_transform: bool
 ) -> Dict[AgeSims, float]:
     """This modifies the sfs by removing the entry at 0 and log10 transform the
-    jcells (keys) and optionally the jmuts (values) i.e. when `log_transform` is
-    `True`.
+    jcells (keys) and optionally the jmuts (values) i.e. when `log_transform`
+    is `True`.
 
     Normalise means normalise the y axis by dividing all entries by the maximal
     value found on the yaxis.
@@ -163,7 +161,7 @@ def plot_sfs_with_avg(
     **kwargs,
 ):
     """Plot individual realisation SFS and normalised avg."""
-    l = str(age) + " y.o."
+    label = str(age) + " y.o."
 
     plot_sfs(
         ax,
@@ -181,7 +179,7 @@ def plot_sfs_with_avg(
         [s.sfs for s in sfs],
         normalise_x=ToCellFrequency(cells),
         options_plot=options,
-        label=l,
+        label=label,
         **kwargs,
     )
     return ax
@@ -231,7 +229,9 @@ def plot_sfs(
     ax.set_ylabel(
         "Variant density" if normalise else "number of variants",
     )
-    ax.set_xlabel(r"Variant frequency $f$" if normalise_x else "Number of cells")
+    ax.set_xlabel(
+        r"Variant frequency $f$" if normalise_x else "Number of cells"
+    )
     ax.tick_params(axis="both", which="both")
     return ax
 
@@ -297,7 +297,7 @@ def plot_sfs_cdf(
         linestyle="",
         marker="x",
         # markersize=10,
-        label=f"data",
+        label="data",
         alpha=0.85,
     )
 
@@ -306,9 +306,6 @@ def plot_sfs_cdf(
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
-        params = abc.sfs_summary_statistic_wasserstein_timepoint(
-            [run], target, donor_name, age
-        )
         params2plot = run.parameters.stringify({"mu", "s", "std", "idx"})
         print(f"run with params {params2plot}")
 

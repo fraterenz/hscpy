@@ -1,10 +1,10 @@
-from typing import Any, Dict, List, Tuple, Union
-import numpy as np
-import pandas as pd
 from pathlib import Path
+from typing import Any, Dict, List, Union
+
+import pandas as pd
+
 from hscpy import load_variant, parse_path2folder_xdoty_years
 from hscpy.figures import AgeSims
-
 from hscpy.parameters import parameters_from_path
 
 
@@ -68,7 +68,9 @@ def load_all_detected_var_counts_by_age(
         if path.is_dir():
             var_counts_sims[parse_path2folder_xdoty_years(path)] = list()
             for i, p in enumerate(path.glob("*.csv")):
-                var_counts_sims[parse_path2folder_xdoty_years(p.parent)].append(
+                var_counts_sims[
+                    parse_path2folder_xdoty_years(p.parent)
+                ].append(
                     RealisationVariantCountsDetected(p, detection_threshold)
                 )
 

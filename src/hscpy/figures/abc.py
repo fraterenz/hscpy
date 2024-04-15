@@ -1,32 +1,34 @@
-import functools
+from itertools import permutations
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
-from futils import snapshot
+
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib import ticker
-import pandas as pd
-import seaborn as sns
 import numpy as np
-from itertools import permutations
+import pandas as pd
 from scipy import stats
+import seaborn as sns
 
 from hscpy import abc, realisation
 from hscpy.figures import AgeSims
-
 
 PRECISION = {"eta": "two", "sigma": "three", "mu": "zero", "tau": "one"}
 
 
 class Estimate:
     def __init__(
-        self, name: str, point_estimate, credible_interval_90: Tuple[float, float]
+        self,
+        name: str,
+        point_estimate,
+        credible_interval_90: Tuple[float, float],
     ):
         """MAP estimate with 90% credibility interval"""
         self.name = name
         self.point_estimate = point_estimate
         if point_estimate < credible_interval_90[0]:
-            self.credible_interval_90 = (point_estimate, credible_interval_90[1])
+            self.credible_interval_90 = (
+                point_estimate,
+                credible_interval_90[1],
+            )
         else:
             self.credible_interval_90 = credible_interval_90
 
@@ -72,10 +74,6 @@ def plot_results(
         "eta": r"$\eta$",
         "sigma": r"$\sigma$",
     }
-    if density:
-        print(
-            "WARNING setting `density=True` is buggy: the yaxis of the top plot seems wrong"
-        )
     results_unique = results.drop_duplicates("idx")
 
     xlims = [
@@ -117,7 +115,9 @@ def plot_results(
         },
     )
 
-    axd["A"].hist(results_unique[x], density=density, bins=xbins.bin, edgecolor="black")
+    axd["A"].hist(
+        results_unique[x], density=density, bins=xbins.bin, edgecolor="black"
+    )
     axd["D"].hist(
         results_unique[y],
         bins=ybins.bin,
@@ -148,7 +148,8 @@ class Bins:
             "tau": Bin("tau", bins_tau),
         }
         self.iteration = [
-            tuple(ele) for ele in {frozenset(c) for c in permutations(self.bins, r=2)}
+            tuple(ele)
+            for ele in {frozenset(c) for c in permutations(self.bins, r=2)}
         ]
 
     def iterate(self) -> List[Tuple[str, str]]:
@@ -172,21 +173,23 @@ class Bins:
             estimate_x, estimate_y = xbins.compute_estimate(
                 posterior.loc[:, xbins.name]
             ), ybins.compute_estimate(posterior.loc[:, ybins.name])
-            estimates[xbins.name], estimates[ybins.name] = estimate_x, estimate_y
-            precision_y, precision_x = PRECISION[ybins.name], PRECISION[xbins.name]
+            estimates[xbins.name], estimates[ybins.name] = (
+                estimate_x,
+                estimate_y,
+            )
             ax["C"].axvline(estimate_x.point_estimate, alpha=0.8)
             ax["C"].axhline(estimate_y.point_estimate, alpha=0.8)
             ax["C"].text(
                 0.45,
                 0.85,
-                f"$\{xbins.name}={{{estimate_x.to_string(precision_x)}}}$",
+                r"$\{xbins.name}={{{estimate_x.to_string(precision_x)}}}$",
                 transform=ax["C"].transAxes,
                 fontsize=12,
             )
             ax["C"].text(
                 0.45,
                 0.7,
-                f"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
+                r"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
                 transform=ax["C"].transAxes,
                 fontsize=12,
             )
@@ -219,7 +222,11 @@ def posterior_mitchell_quantile(
     counts = abc_mitchell["idx"].value_counts()
     tot_runs = (counts == counts.max()).sum()
     print(
-        f"ABC combined kept {len(runs2keep) / tot_runs:.2%} of the runs ({len(runs2keep)} runs) over a total of {tot_runs} runs"
+        "ABC kept {:.2%} of the runs ({} runs) over a total of {} runs".format(
+            len(runs2keep) / tot_runs,
+            len(runs2keep),
+            tot_runs
+            )
     )
     return runs2keep
 
@@ -234,7 +241,7 @@ def round_estimates(estimate: float, significant: str) -> str:
     elif significant == "zero":
         return str(int(round(estimate, 0)))
     raise ValueError(
-        f"significant must be either 'two' 'one' or 'zero', not '{significant}'"
+        f"significant must be 'two' 'one' or 'zero', not '{significant}'"
     )
 
 
@@ -254,7 +261,9 @@ class Gamma:
             100,
         )
         # pad to zero
-        x, y = np.insert(x, 0, 0), np.insert(stats.gamma.pdf(x, shape, 0, scale), 0, 0)
+        x, y = np.insert(x, 0, 0), np.insert(
+            stats.gamma.pdf(x, shape, 0, scale), 0, 0
+        )
         # pad to 0.4 (max val of s)
         if max(x) < 0.4:
             x, y = np.insert(x, -1, 0.4), np.insert(
@@ -337,7 +346,9 @@ def plot_gamma_inferred(
     ax.text(
         loc[0],
         loc[1],
-        f"$\eta={estimate_eta.point_estimate:.2f}\;\sigma={estimate_sigma.point_estimate:.3f}$",
+        r"$\eta={:.2f}\;\sigma={:.3f}$".format(
+            estimate_eta.point_estimate, estimate_sigma.point_estimate
+        ),
         fontsize=13,
         color=color,
         # bbox=bbox,
@@ -347,7 +358,9 @@ def plot_gamma_inferred(
     ax.set_ylabel("pdf")
     ax.set_xlabel(r"Innate clone fitness $s$")
     for row in (
-        posterior[["eta", "sigma"]].sample(nb2plot, random_state=seed).itertuples()
+        posterior[["eta", "sigma"]]
+        .sample(nb2plot, random_state=seed)
+        .itertuples()
     ):
         Gamma(row.eta, row.sigma).plot(ax, color=color, alpha=0.1)
     return ax
@@ -380,28 +393,6 @@ def plot_posteriors_with_estimate(
     return ax
 
 
-def create_posteriors_grid_eta_sigma_tau_mu():
-    fig = plt.figure(figsize=[8, 7.5], layout="constrained")
-    # init axes
-    gs0 = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1, 2])
-    gs00 = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=gs0[0])
-    gs01 = gs0[1].subgridspec(2, 2)
-    ax1 = fig.add_subplot(gs00[0, :-1])
-    # ax1.set_ylim([-1, 22])
-    ax1.set_ylabel("pdf")
-    ax1.set_xlabel(r"$s$")  # TODO
-    ax2 = fig.add_subplot(gs00[0, -1])
-    ax2.axis("off")
-    ax3 = fig.add_subplot(gs01[0, 0])
-    ax4 = fig.add_subplot(gs01[0, 1])
-    ax4.xaxis.set_major_formatter(ticker.FuncFormatter(fmt_two_digits))
-    # ax4.yaxis.set_major_formatter(ticker.FuncFormatter(fmt_two_digits))
-    ax5 = fig.add_subplot(gs01[1, 0])
-    ax6 = fig.add_subplot(gs01[1, 1])
-
-    return fig
-
-
 class SyntheticValidation:
     def __init__(
         self,
@@ -423,11 +414,12 @@ class SyntheticValidation:
         self.target_sfs = {k: sfs.sfs for k, sfs in target_sfs.items()}
 
         print(
-            f"running abc synthetic with ground truth run {idx} with params: {self.params}"
+            f"running abc synthetic with target run {idx} with: {self.params}"
         )
 
         self.target_clones = sims_clones.loc[
-            sims_clones.idx == self.params["idx"], ["age", "variant counts detected"]
+            sims_clones.idx == self.params["idx"],
+            ["age", "variant counts detected"],
         ].rename(columns={"variant counts detected": "clones"})
 
         abc_mitchell = abc.compute_abc_results(
@@ -480,90 +472,3 @@ def get_idx_smaller_distance_clones_idx(
     return second_view.loc[
         second_view.wasserstein == second_view.wasserstein.min(), "idx"
     ].squeeze()
-
-
-def abc_simulated_validation(
-    target_stem: str,
-    sfs_sims: Dict[AgeSims, List[realisation.RealisationSfs]],
-    counts: pd.DataFrame,
-    thresholds: abc.AbcThresholds,
-    show_priors: bool = True,
-):
-    assert False, "TODO"
-    target_sfs_simulated = {
-        t: sfs_.sfs
-        for t, sfs_donor in sfs_sims.items()
-        for sfs_ in sfs_donor
-        if sfs_.parameters.path.stem == target_stem
-    }
-
-    assert len(target_sfs_simulated), "wrong `target_stem`"
-
-    abc_simulated = abc.sfs_summary_statistic_wasserstein(
-        sfs_sims, target_sfs_simulated, target_stem
-    )
-
-    abc_simulated["target"] = (
-        abc_simulated.path.map(lambda x: Path(x).stem) == target_stem
-    )
-
-    abc_simulated = abc_simulated.merge(
-        right=counts[["age", "idx", "variant counts detected"]],
-        how="left",
-        left_on=["idx", "timepoint"],
-        right_on=["idx", "age"],
-        validate="one_to_one",
-    )
-
-    abc_simulated = abc_simulated.merge(
-        right=abc_simulated.loc[
-            abc_simulated.target, ["variant counts detected", "timepoint"]
-        ].rename({"variant counts detected": "clones"}, axis=1),
-        how="left",
-        on="timepoint",
-        validate="many_to_one",
-    )
-
-    abc_simulated["clones diff"] = (
-        abc_simulated["clones"] - abc_simulated["variant counts detected"]
-    ).abs()
-
-    if show_priors:
-        priors = abc_simulated[["mu", "u", "s", "std"]].drop_duplicates()
-
-        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
-        ax = plot_prior(priors["s"], ax=ax, binwidth=0.01)
-        plt.show()
-
-        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
-        ax = plot_prior(priors["std"], ax=ax, binwidth=0.001)
-        plt.show()
-
-        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
-        ax = plot_prior(priors["mu"], ax=ax, discrete=True)
-        plt.show()
-
-        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
-        ax = plot_prior(priors["u"], ax=ax)
-        plt.show()
-
-        fig, ax = plt.subplots(1, 1, figsize=[7, 6])
-        sns.histplot(abc_simulated["wasserstein"], binwidth=0.01, ax=ax)
-        plt.show()
-
-    tot_runs = abc_simulated.age.unique().shape[0]
-    minimum_runs = tot_runs - round(tot_runs * thresholds.proportion_runs_to_discard)
-
-    results, g1, g2, g3 = run_abc_filtering_on_clones(abc_simulated, thresholds)
-
-    mu_target, s_target, std_target = (
-        abc_simulated.loc[abc_simulated.target, "mu"].squeeze(),
-        abc_simulated.loc[abc_simulated.target, "s"].squeeze(),
-        abc_simulated.loc[abc_simulated.target, "std"].squeeze(),
-    )
-
-    g1.ax_joint.plot(mu_target, s_target, marker="x", color="black", mew=2)
-    g2.ax_joint.plot(mu_target, std_target, marker="x", color="black", mew=2)
-    g3.ax_joint.plot(s_target, std_target, marker="x", color="black", mew=2)
-
-    return abc_simulated, g1, g2, g3

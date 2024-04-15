@@ -1,15 +1,13 @@
+from dataclasses import dataclass
+from typing import Dict, List, Set, Tuple
+
+from futils import snapshot
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
-from matplotlib import colors
-import matplotlib.pyplot as plt
 from scipy import stats
-from dataclasses import dataclass
-from futils import snapshot
+
 from hscpy import realisation
 from hscpy.figures import AgeSims
-
 from hscpy.realisation import RealisationSfs
 
 
@@ -35,7 +33,7 @@ def compute_abc_results(
             ele in sims_clones.columns
             for ele in ["age", "idx", "variant counts detected"]
         ]
-    ), "`sims_clones` should have `age`, `idx` and `variant counts detected` as cols"
+    ), "`sims_clones` missing cols `age`, `idx` and `variant counts detected`"
     print("wasserstein metric")
     abc_results = sfs_summary_statistic_wasserstein(
         sims_sfs,
@@ -85,7 +83,8 @@ def run_abc_sfs_clones(
     # run abc with different metrics per each timepoint and keep only the runs
     # that are accepted at least for minimum timepoints
     print(
-        f"Running ABC with {minimum_timepoints} minimum timepoints over {nb_timepoints}"
+        f"Running ABC with {minimum_timepoints} minimum timepoints"
+        "over {nb_timepoints}"
     )
 
     wasserstein_idx = set(
@@ -124,7 +123,8 @@ def sfs_summary_statistic_ks(
     We compute the cumulative distribution function (cdf) for all the SFS from
     the simulations `sims` and compare that against the cdf of simulations' SFS
     `sims`.
-    `target` and `sims` must have the same keys, keys being the timepoint considered.
+    `target` and `sims` must have the same keys, keys being the timepoint
+    considered.
     """
     abc_results = []
 
@@ -147,8 +147,6 @@ def get_values_weights_from_sfs(
     sfs_.pop(0, 0)
     # we dont use the log scale transf anymore because it
     # takes ages to run snapshot.array_from_hist(sfs)
-    # cdf = stats.ecdf(snapshot.array_from_hist(sfs_))
-    # return cdf.cdf.quantiles.tolist(), (-np.log10(cdf.cdf.probabilities)).tolist()
     return list(sfs_.keys()), list(sfs_.values())
 
 
@@ -160,18 +158,19 @@ def sfs_summary_statistic_wasserstein(
     """
     Compute the wasserstein distance between the simulated SFS in `sims` and
     the target SFS in `target`.
-    We use the scipy function `stats.wasserstein_distance` with the values being the
-    x-axis of the SFS (nb of cells with j muts) and the weights being the y-axis of the
-    SFS (the nb of j muts), see
+    We use the scipy function `stats.wasserstein_distance` with the values
+    being the x-axis of the SFS (nb of cells with j muts) and the weights being
+    the y-axis of the SFS (the nb of j muts), see
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html
 
-    The only processing step we take before computing the SFS is to remove the entry 0 when
-    present, we don't log-transform anymore because it took time to transform the dict
-    into an array, see `get_values_weigths_from_sfs`.
+    The only processing step we take before computing the SFS is to remove the
+    entry 0 when present, we don't log-transform anymore because it took time
+    to transform the dict into an array, see `get_values_weigths_from_sfs`.
 
     Return a list of records (list of dict) with the summary statistics and
     other quantities such as the parameters used.
-    `target` and `sims` must have the same keys, keys being the timepoint considered.
+    `target` and `sims` must have the same keys, keys being the timepoints
+    considered.
     """
     abc_results = []
 
@@ -203,7 +202,6 @@ def sfs_summary_statistic_wasserstein_timepoint(
     for i, my_sfs in enumerate(sims):
         v_values, v_weights = get_values_weights_from_sfs(target)
         u_values, u_weights = get_values_weights_from_sfs(my_sfs.sfs)
-        # assert len(u_values) == len(v_values), f"{len(u_values)} vs {len(v_values)}"
         params = my_sfs.parameters.into_dict()
         # compute the summary statistic
         params["wasserstein"] = stats.wasserstein_distance(
@@ -216,7 +214,9 @@ def sfs_summary_statistic_wasserstein_timepoint(
     return all_params
 
 
-def summary_statistic_relative_diff_clones(summary: pd.DataFrame) -> pd.DataFrame:
+def summary_statistic_relative_diff_clones(
+    summary: pd.DataFrame,
+) -> pd.DataFrame:
     summary["rel clones diff"] = np.where(
         summary["clones"] == 0,
         summary["clones diff"],
@@ -225,12 +225,16 @@ def summary_statistic_relative_diff_clones(summary: pd.DataFrame) -> pd.DataFram
     return summary
 
 
-def filter_run(summary_t: pd.DataFrame, quantile: float, metric: str) -> pd.DataFrame:
+def filter_run(
+    summary_t: pd.DataFrame, quantile: float, metric: str
+) -> pd.DataFrame:
     assert metric in set(
         summary_t.columns
-    ), f"metric {metric} not found in DataFrame with cols {set(summary_t.columns)}"
+    ), f"metric {metric} not found in df with cols {set(summary_t.columns)}"
     df = summary_t[[metric, "idx", "timepoint"]]
-    kept = df.loc[df[metric] <= df[metric].quantile(quantile), ["idx", "timepoint"]]
+    kept = df.loc[
+        df[metric] <= df[metric].quantile(quantile), ["idx", "timepoint"]
+    ]
     kept["metric"] = metric
     return kept
 
@@ -247,7 +251,7 @@ def filter_per_timepoint(
         )
         accepted.append(kept)
         if verbose:
-            print(f"{len(kept)} runs accepted for timepoint {t} with metric {metric}")
+            print(f"{len(kept)} runs accepted for timepoint {t} with {metric}")
     return pd.concat(accepted)
 
 
@@ -270,9 +274,11 @@ class AbcResults:
         - the timepoint (age) at which the run has been accepted
         - the metric used to perform the filtering
 
-        To get a unique list of idx independently of the timepoints, run `get_idx`.
+        To get a unique list of idx independently of the timepoints, run
+        `get_idx`.
 
-        `accepted`: are all the runs that meet the quantile threshold per timepoint
+        `accepted`: are all the runs that meet the quantile threshold per
+        timepoint
         """
         assert quantile <= 1, f"found quantile greater than 1: {quantile}"
         # all the runs that meet the quantile threshold
@@ -283,17 +289,20 @@ class AbcResults:
     def get_idx(self) -> List[int]:
         return list(self.accepted.idx.unique())
 
-    def abc_filter_on_minimum_timepoints(self, minimum_timepoints: int) -> pd.DataFrame:
+    def abc_filter_on_minimum_timepoints(
+        self, minimum_timepoints: int
+    ) -> pd.DataFrame:
         timepoints_accepted = self.accepted.timepoint.unique().shape[0]
         assert (
             minimum_timepoints <= timepoints_accepted
-        ), f"minimum_timepoints greater than the timepoints in the accepted runs {minimum_timepoints} vs {timepoints_accepted}"
+        ), "minimum_timepoints greater than the timepoints in the accepted "
+        f"runs {minimum_timepoints} vs {timepoints_accepted}"
         runs2keep = (
             self.accepted.groupby("idx").count() >= minimum_timepoints
         ).reset_index()
         runs2keep = [
             int(ele)
-            for ele in runs2keep.where(runs2keep.timepoint).dropna().idx.tolist()
+            for ele in runs2keep.where(runs2keep.timepoint).dropna().idx
         ]
         return self.accepted.loc[self.accepted.idx.isin(runs2keep), :]
 

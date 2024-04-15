@@ -29,7 +29,9 @@ def prepare_sfs_with_uniformisation_for_test(
     f_exp /= f_exp.sum()
     assert len(f_obs) == len(f_exp)
 
-    mean_squared_log_error = np.mean(np.power(np.log(f_obs + 1) - np.log(f_exp + 1), 2))
+    mean_squared_log_error = np.mean(
+        np.power(np.log(f_obs + 1) - np.log(f_exp + 1), 2)
+    )
     rmsre = np.mean(np.power((f_obs - f_exp) / f_obs, 2))
     mape = np.mean(np.abs(f_obs - f_exp) / f_obs)
 
