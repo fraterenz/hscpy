@@ -162,7 +162,14 @@ def plot_sfs_with_avg(
 ):
     """Plot individual realisation SFS and normalised avg."""
     label = str(age) + " y.o."
-
+    plot_sfs_avg(
+        ax,
+        [s.sfs for s in sfs],
+        normalise_x=ToCellFrequency(cells),
+        options_plot=options,
+        label=label,
+        **kwargs,
+    )
     plot_sfs(
         ax,
         sfs_individual.sfs,
@@ -172,15 +179,6 @@ def plot_sfs_with_avg(
         normalise_x=ToCellFrequency(cells),
         options=options,
         color=kwargs.get("color", "blue"),
-    )
-
-    plot_sfs_avg(
-        ax,
-        [s.sfs for s in sfs],
-        normalise_x=ToCellFrequency(cells),
-        options_plot=options,
-        label=label,
-        **kwargs,
     )
     return ax
 
