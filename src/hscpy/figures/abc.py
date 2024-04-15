@@ -223,10 +223,8 @@ def posterior_mitchell_quantile(
     tot_runs = (counts == counts.max()).sum()
     print(
         "ABC kept {:.2%} of the runs ({} runs) over a total of {} runs".format(
-            len(runs2keep) / tot_runs,
-            len(runs2keep),
-            tot_runs
-            )
+            len(runs2keep) / tot_runs, len(runs2keep), tot_runs
+        )
     )
     return runs2keep
 

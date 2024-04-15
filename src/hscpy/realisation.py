@@ -34,7 +34,7 @@ class SimulationCMD:
         name: str,
         dir2save: str,
         exp_phase: bool = True,
-        seed: None | int = None,
+        seed: Union[None , int] = None,
     ):
         """Write some simulation's parameters into a bash cmd"""
         assert len(ages) == len(samples)
@@ -101,7 +101,7 @@ class RealisationSfs:
         self.sfs = load_histogram(path)
 
 
-def load_all_sfs_by_age(path2dir: Path, filtering: Set[int] | None = None):
+def load_all_sfs_by_age(path2dir: Path, filtering: Union[Set[int] , None] = None):
     return load_realisations(path2dir, RealisationKind.SFS, filtering)
 
 
@@ -185,12 +185,12 @@ class RealisationBurden:
         self.burden = load_histogram(path)
 
 
-def load_all_burden_by_age(path2dir: Path, filtering: Set[int] | None = None):
+def load_all_burden_by_age(path2dir: Path, filtering: Union[Set[int] , None] = None):
     return load_realisations(path2dir, RealisationKind.BURDEN, filtering)
 
 
 def compute_mean_variance(
-    burden: snapshot.Histogram | snapshot.Distribution,
+    burden: Union[snapshot.Histogram , snapshot.Distribution],
 ) -> Tuple[float, float]:
     # cells will be 1 if it's a distribution
     cells = sum(burden.values())
@@ -234,7 +234,7 @@ def pooled_burden(burdens: List[snapshot.Histogram]) -> snapshot.Distribution:
 
 
 def load_realisations(
-    path2dir: Path, realisation: RealisationKind, filtering: Set[int] | None
+    path2dir: Path, realisation: RealisationKind, filtering: Union[Set[int] , None]
 ) -> Mapping[AgeSims, Sequence[Union[RealisationBurden, RealisationSfs]]]:
     assert path2dir.is_dir()
     realisations = dict()

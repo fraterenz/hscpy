@@ -1,3 +1,4 @@
+from typing import Union
 from futils import snapshot
 import numpy as np
 
@@ -6,7 +7,7 @@ from hscpy.figures import PlotOptions
 
 def plot_burden(
     ax,
-    my_burden: snapshot.Histogram | snapshot.Distribution,
+    my_burden: Union[snapshot.Histogram, snapshot.Distribution],
     normalise: bool,
     options: PlotOptions,
     bins: int = 20,

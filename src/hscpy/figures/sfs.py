@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Union
 
 from futils import snapshot
 import numpy as np
@@ -15,12 +15,12 @@ def plot_ax_sfs_predictions_data_sims(
     corrected_one_over_1_squared: realisation.CorrectedVariants,
     mitchell_sfs: snapshot.Histogram,
     plot_options: PlotOptions,
-    sfs_sims_donor: List[realisation.RealisationSfs] | None = None,
-    one_over_f_csv: Path | None = None,
-    idx_sim2plot: int | None = None,
-    mew: float | None = None,
-    markersize: float | None = None,
-    lw: float | None = None,
+    sfs_sims_donor: Union[List[realisation.RealisationSfs], None] = None,
+    one_over_f_csv: Union[Path, None] = None,
+    idx_sim2plot: Union[int, None] = None,
+    mew: Union[float, None] = None,
+    markersize: Union[float, None] = None,
+    lw: Union[float, None] = None,
 ):
     # 1/f^2 sampled predictions
     normalisation_x = ToCellFrequency(sample_size=donor.cells)
@@ -135,7 +135,7 @@ def plot_sfs_avg_unormalised(
     ax,
     my_sfs: List[snapshot.Histogram],
     options_plot: PlotOptions,
-    normalise_x: ToCellFrequency | None,
+    normalise_x: Union[ToCellFrequency, None],
     **kwargs,
 ):
     pooled = snapshot.Uniformise.pooled_histogram(my_sfs)
@@ -189,7 +189,7 @@ def plot_sfs_avg(
     ax,
     my_sfs: List[snapshot.Histogram],
     options_plot: PlotOptions,
-    normalise_x: ToCellFrequency | None,
+    normalise_x: Union[ToCellFrequency, None],
     **kwargs,
 ):
     pooled = snapshot.Uniformise.pooled_distribution(my_sfs)
@@ -206,10 +206,10 @@ def plot_sfs_avg(
 
 def plot_sfs(
     ax,
-    my_sfs: snapshot.Histogram | snapshot.Distribution,
+    my_sfs: Union[snapshot.Histogram, snapshot.Distribution],
     normalise: bool,
     options: PlotOptions,
-    normalise_x: ToCellFrequency | None = None,
+    normalise_x: Union[ToCellFrequency, None] = None,
     **kwargs,
 ):
     """This modifies the sfs by removing the entry at 0"""
@@ -241,7 +241,7 @@ def plot_sfs_sim_with_id(
     my_sfs: snapshot.Histogram,
     normalise: bool,
     options: PlotOptions,
-    normalise_x: ToCellFrequency | None,
+    normalise_x: Union[ToCellFrequency, None],
     **kwargs,
 ):
     return plot_sfs(
@@ -259,7 +259,7 @@ def plot_sfs_correction(
     correction: realisation.CorrectedVariants,
     normalise: bool,
     options: PlotOptions,
-    normalise_x: ToCellFrequency | None,
+    normalise_x: Union[ToCellFrequency, None],
     **kwargs,
 ):
     cells = correction.corrected_variants.shape[0]

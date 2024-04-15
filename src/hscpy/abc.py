@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Union
 
 from futils import snapshot
 import numpy as np
@@ -188,7 +188,7 @@ def sfs_summary_statistic_wasserstein_timepoint(
     sims: List[RealisationSfs],
     target: snapshot.Histogram,
     target_name: str,
-    age: int | float,
+    age: Union[int, float],
 ):
     """
     Return a list of records (list of dict) with the summary statistics and
