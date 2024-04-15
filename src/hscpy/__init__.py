@@ -37,3 +37,11 @@ def parse_path2folder_xdoty_years(path2folder: Path) -> float:
     return round(
         float(path2folder.stem.replace("dot", ".").replace("years", "")), 1
     )
+
+
+COLORS = {
+    "yellow": "#fec44f",
+    "orange": "#d95f0e",
+    "blue": "#0570B0",
+    "grey_dark": "#bdbdbd",
+}

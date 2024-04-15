@@ -34,7 +34,7 @@ class SimulationCMD:
         name: str,
         dir2save: str,
         exp_phase: bool = True,
-        seed: Union[None , int] = None,
+        seed: Union[None, int] = None,
     ):
         """Write some simulation's parameters into a bash cmd"""
         assert len(ages) == len(samples)
@@ -65,21 +65,23 @@ class SimulationCMD:
         mean = round(compute_s_per_division_from_s_per_year(eta, tau), 5)
         std = round(compute_std_per_division_from_std_per_year(sigma, tau), 5)
 
-        return f"-c {self.cells}"\
-            f"-y {self.ages[-1] + 1}"\
-            " -r 1"\
-            " --sequential"\
-            f" --mean-std {mean} {std}"\
-            f" --subsamples={','.join([str(sample) for sample in samples])}"\
-            f" --snapshots={','.join([str(age) for age in self.ages])}"\
-            f" {seed_cmd}"\
-            f" {self.dir}"\
-            f" {'exp-moran' if self.exp_phase else 'moran'}"\
-            f" --mu {self.mu}"\
-            " --mu-division 1.14"\
-            f" --mu-background {round(m_background(self.tau), 5)}"\
-            f" --tau {self.tau}"\
+        return (
+            f"-c {self.cells}"
+            f"-y {self.ages[-1] + 1}"
+            " -r 1"
+            " --sequential"
+            f" --mean-std {mean} {std}"
+            f" --subsamples={','.join([str(sample) for sample in samples])}"
+            f" --snapshots={','.join([str(age) for age in self.ages])}"
+            f" {seed_cmd}"
+            f" {self.dir}"
+            f" {'exp-moran' if self.exp_phase else 'moran'}"
+            f" --mu {self.mu}"
+            " --mu-division 1.14"
+            f" --mu-background {round(m_background(self.tau), 5)}"
+            f" --tau {self.tau}"
             f" {exp_cmd}"
+        )
 
     def cmd(self, path2hsc: str, path2save: str) -> str:
         """Write into a string the bash cmd required to run the simulations.
@@ -101,7 +103,9 @@ class RealisationSfs:
         self.sfs = load_histogram(path)
 
 
-def load_all_sfs_by_age(path2dir: Path, filtering: Union[Set[int] , None] = None):
+def load_all_sfs_by_age(
+    path2dir: Path, filtering: Union[Set[int], None] = None
+):
     return load_realisations(path2dir, RealisationKind.SFS, filtering)
 
 
@@ -185,12 +189,14 @@ class RealisationBurden:
         self.burden = load_histogram(path)
 
 
-def load_all_burden_by_age(path2dir: Path, filtering: Union[Set[int] , None] = None):
+def load_all_burden_by_age(
+    path2dir: Path, filtering: Union[Set[int], None] = None
+):
     return load_realisations(path2dir, RealisationKind.BURDEN, filtering)
 
 
 def compute_mean_variance(
-    burden: Union[snapshot.Histogram , snapshot.Distribution],
+    burden: Union[snapshot.Histogram, snapshot.Distribution],
 ) -> Tuple[float, float]:
     # cells will be 1 if it's a distribution
     cells = sum(burden.values())
@@ -202,7 +208,6 @@ def compute_mean_variance(
         )
     )
     return mean, variance
-
 
 
 def average_burden(burdens: List[snapshot.Histogram]):
@@ -234,7 +239,9 @@ def pooled_burden(burdens: List[snapshot.Histogram]) -> snapshot.Distribution:
 
 
 def load_realisations(
-    path2dir: Path, realisation: RealisationKind, filtering: Union[Set[int] , None]
+    path2dir: Path,
+    realisation: RealisationKind,
+    filtering: Union[Set[int], None],
 ) -> Mapping[AgeSims, Sequence[Union[RealisationBurden, RealisationSfs]]]:
     assert path2dir.is_dir()
     realisations = dict()

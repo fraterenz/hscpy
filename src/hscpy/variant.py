@@ -127,7 +127,7 @@ def load_all_var_frac_by_age(
 
 def variant_fractions_df(
     variants_frac: Dict[float, List[RealisationVariantFractions]],
-    runs2load: Union[int , None] = None,
+    runs2load: Union[int, None] = None,
 ) -> pd.DataFrame:
     vs = []
     for age, var in variants_frac.items():

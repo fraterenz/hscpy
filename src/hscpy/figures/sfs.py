@@ -5,7 +5,7 @@ from futils import snapshot
 import numpy as np
 import pandas as pd
 
-from hscpy import realisation
+from hscpy import COLORS, realisation
 from hscpy.figures import AgeSims, PlotOptions, ToCellFrequency
 
 
@@ -101,7 +101,7 @@ def plot_ax_sfs_predictions_data_sims(
         normalise=True,
         normalise_x=normalisation_x,
         options=plot_options,
-        color="#d95f0e",
+        color=COLORS["orange"],
         mew=mew if mew else 3,
         linestyle="",
         marker="x",
@@ -289,7 +289,7 @@ def plot_sfs_cdf(
         normalise=True,
         normalise_x=normalisation_x,
         options=plot_options,
-        color="#d95f0e",
+        color=COLORS["orange"],
         mew=3,
         markersize=7,
         linestyle="",
@@ -300,7 +300,7 @@ def plot_sfs_cdf(
     )
 
     cdf_x, cdf_y = realisation.cdf_from_dict(target)
-    ax_cdf.plot(cdf_x / donor_cells, cdf_y, color="#d95f0e", alpha=0.9)
+    ax_cdf.plot(cdf_x / donor_cells, cdf_y, color=COLORS["orange"], alpha=0.9)
 
     for s_id, marker, color in zip(idx2show, markers, colors):
         run = [ele for ele in sfs_sims if ele.parameters.idx == s_id][0]
@@ -313,7 +313,7 @@ def plot_sfs_cdf(
             normalise=True,
             normalise_x=normalisation_x,
             options=plot_options,
-            color="grey",
+            color=COLORS["grey_dark"],
             mew=3,
             markersize=7,
             linestyle="",
@@ -324,7 +324,9 @@ def plot_sfs_cdf(
         )
 
         cdf_x, cdf_y = realisation.cdf_from_dict(run.sfs)
-        ax_cdf.plot(cdf_x / donor_cells, cdf_y, color="grey", alpha=0.6)
+        ax_cdf.plot(
+            cdf_x / donor_cells, cdf_y, color=COLORS["grey_dark"], alpha=0.6
+        )
 
     ax_cdf.set_xlabel(r"Variant frequency $f$")
     ax_cdf.set_ylabel("Cdf")
