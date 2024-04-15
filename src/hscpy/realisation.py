@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum, StrEnum, auto
+from enum import Enum, auto
 from pathlib import Path
 from typing import Dict, List, Mapping, Sequence, Set, Tuple, Union
 
@@ -117,7 +117,7 @@ def cdf_from_dict(
     return np.array(list(ordered_distr.keys())), probs
 
 
-class Correction(StrEnum):
+class Correction(Enum):
     ONE_OVER_F = auto()
     ONE_OVER_F_SQUARED = auto()
 
@@ -203,31 +203,6 @@ def compute_mean_variance(
     )
     return mean, variance
 
-
-def plot_burden(
-    burden: snapshot.Histogram | snapshot.Distribution, ax, **kwargs
-):
-    # remove empty entries
-    cleaned = {k: v for k, v in sorted(burden.items()) if v > 0}
-
-    ax.bar(
-        list(cleaned.keys()),
-        list(cleaned.values()),
-        color=kwargs["color"],
-        alpha=kwargs["alpha"],
-        width=1,
-    )
-    ymax = kwargs.get("ymax", max(cleaned.values()))
-    mean, var = compute_mean_variance(cleaned)
-    ax.axvline(
-        x=mean,
-        ymin=0,
-        ymax=ymax,
-        linestyle="--",
-        c=kwargs["color"],
-        label=f"{kwargs['label']} years, m={mean:.2f}, var={var:.2f}",
-    )
-    return ax
 
 
 def average_burden(burdens: List[snapshot.Histogram]):
