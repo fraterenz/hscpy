@@ -26,7 +26,7 @@ def m_background(tau) -> float:
 
 
 def m_background_exp(mean, time) -> float:
-    a = 2 * np.log(CELLS + 1 / 2)
+    a = 2 * np.log((CELLS + 1) / 2)
     return (mean - MUT_PER_DIV * a) / time
 
 
