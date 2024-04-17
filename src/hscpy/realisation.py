@@ -67,7 +67,7 @@ class SimulationCMD:
 
         return (
             f"-c {self.cells}"
-            f"-y {self.ages[-1] + 1}"
+            f" -y {self.ages[-1] + 1}"
             " -r 1"
             " --sequential"
             f" --mean-std {mean} {std}"
