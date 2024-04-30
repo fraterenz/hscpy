@@ -177,19 +177,20 @@ class Bins:
                 estimate_x,
                 estimate_y,
             )
+            precision_x, precision_y = PRECISION[xbins.name], PRECISION[ybins.name]
             ax["C"].axvline(estimate_x.point_estimate, alpha=0.8)
             ax["C"].axhline(estimate_y.point_estimate, alpha=0.8)
             ax["C"].text(
                 0.45,
                 0.85,
-                r"$\{xbins.name}={{{estimate_x.to_string(precision_x)}}}$",
+                fr"$\{xbins.name}={estimate_x.to_string(precision_x)}$",
                 transform=ax["C"].transAxes,
                 fontsize=12,
             )
             ax["C"].text(
                 0.45,
                 0.7,
-                r"$\{ybins.name}={{{estimate_y.to_string(precision_y)}}}$",
+                fr"$\{ybins.name}={estimate_y.to_string(precision_y)}$",
                 transform=ax["C"].transAxes,
                 fontsize=12,
             )

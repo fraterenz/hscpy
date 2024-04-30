@@ -84,7 +84,7 @@ def run_abc_sfs_clones(
     # that are accepted at least for minimum timepoints
     print(
         f"Running ABC with {minimum_timepoints} minimum timepoints"
-        "over {nb_timepoints}"
+        f" over {nb_timepoints}"
     )
 
     wasserstein_idx = set(
