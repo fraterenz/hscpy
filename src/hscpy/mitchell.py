@@ -5,6 +5,7 @@ from typing import NewType, Tuple
 
 from futils import snapshot
 import pandas as pd
+import numpy as np
 
 
 Mitchell = NewType("Mitchell", pd.DataFrame)
@@ -26,6 +27,18 @@ def donors() -> pd.DataFrame:
     )
 
 
+def load_clones(path2clades: Path) -> pd.DataFrame:
+    clades = pd.read_csv(path2clades)
+    clades = pd.concat(
+        [clades, clades.donor_info.str.extract(r"(?P<age>\d+)\s(?P<gender>[MF])")],
+        axis=1,
+    )
+    clades.drop(columns=["donor_info"], inplace=True)
+    clades.gender = clades.gender.astype("category")
+    clades.age = clades.age.astype(int)
+    return clades
+
+
 def load_patient(
     patient: str, path2matrix: Path, path2type: Path
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -38,15 +51,11 @@ def load_patient(
     return mut_matrix, mut_type
 
 
-def filter_mutations(
-    m_matrix: pd.DataFrame, m_type: pd.DataFrame
-) -> pd.DataFrame:
+def filter_mutations(m_matrix: pd.DataFrame, m_type: pd.DataFrame) -> pd.DataFrame:
     return m_matrix.iloc[m_type[m_type == "SNV"].dropna().index, :]
 
 
-def load_and_process_mitchell(
-    path2sims: Path, drop_donor_KX007: bool
-) -> Mitchell:
+def load_and_process_mitchell(path2sims: Path, drop_donor_KX007: bool) -> Mitchell:
     assert (
         path2sims.name == "Summary_cut.csv"
     ), f"wrong arg `path2sims` {path2sims}, expected path to file "
@@ -57,9 +66,7 @@ def load_and_process_mitchell(
     summary.sort_values(by="age", inplace=True)
     summary.reset_index(inplace=True)
     # drop this donor because they have updated it twice
-    summary.drop(
-        index=summary[summary.donor_id == "KX007"].index, inplace=True
-    )
+    summary.drop(index=summary[summary.donor_id == "KX007"].index, inplace=True)
 
     # neglect some duplicated colonies e.g. summary.colony_ID == "11_E07"
     summary = summary.merge(
@@ -105,9 +112,7 @@ def donor_mut_matrix(
 def sfs_donor_mitchell(
     name: str, age: int, path2mitchell: Path, remove_indels: bool
 ) -> Tuple[str, int, int, snapshot.Histogram]:
-    _, filtered_matrix, cells = donor_mut_matrix(
-        name, path2mitchell, remove_indels
-    )
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
     sfs_donor = filtered_matrix.sum(axis=1).value_counts()
     sfs_donor.drop(index=sfs_donor[sfs_donor.index == 0].index, inplace=True)
     x_sfs = sfs_donor.index.to_numpy(dtype=int)
@@ -120,9 +125,7 @@ def sfs_donor_mitchell(
 def burden_donor_mitchell(
     name: str, age: int, path2mitchell: Path, remove_indels: bool
 ) -> Tuple[str, int, int, snapshot.Histogram]:
-    _, filtered_matrix, cells = donor_mut_matrix(
-        name, path2mitchell, remove_indels
-    )
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
     burden_donor = filtered_matrix.sum(axis=0).value_counts()
     x_burden, burden_donor = (
         burden_donor.index.to_numpy(),
@@ -132,3 +135,35 @@ def burden_donor_mitchell(
         {x: y for x, y in zip(x_burden, burden_donor)}
     )
     return (name, age, cells, my_burden)
+
+
+def largest_variant_frequency(mut_matrix: pd.DataFrame) -> float:
+    return variant_frequencies(mut_matrix)[-1]
+
+
+def variant_frequencies(mut_matrix: pd.DataFrame) -> np.ndarray:
+    return np.sort((mut_matrix.sum(axis=1) / mut_matrix.shape[-1]).to_numpy())
+
+
+def detected_vaf_donor_mitchell(
+    name: str, age, path2mitchell: Path, detect: float, remove_indels: bool
+):
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    clones = variant_frequencies(filtered_matrix)
+    return (name, age, cells, clones[clones >= detect])
+
+
+def vaf_donor_mitchell(
+    name: str, age, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, int, int, np.ndarray]:
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    clones = variant_frequencies(filtered_matrix)
+    return (name, age, cells, clones)
+
+
+def largest_vaf_donor_mitchell(
+    name: str, age, path2mitchell: Path, remove_indels: bool
+) -> Tuple[str, int, int, float]:
+    _, filtered_matrix, cells = donor_mut_matrix(name, path2mitchell, remove_indels)
+    freq = largest_variant_frequency(filtered_matrix)
+    return (name, age, cells, freq)
